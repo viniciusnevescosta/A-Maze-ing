@@ -1,0 +1,13 @@
+# Arquivos compilados e caches do Python
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# Arquivos de sistema do macOS
+.DS_Store
