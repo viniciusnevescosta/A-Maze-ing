@@ -6,19 +6,106 @@ on:
       - opened
       - reopened
       - ready_for_review
+      - closed
 
 permissions:
   contents: write
+  issues: write
   pull-requests: write
 
 jobs:
-  enable-auto-merge:
-    if: github.event.pull_request.draft == false
+  prepare-pull-request:
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
+      - name: Link the originating issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          issue_number="${PR_BRANCH%%-*}"
+
+          if [[ ! "$issue_number" =~ ^[0-9]+$ ]]; then
+            echo "Branch does not start with an issue number; skipping."
+            exit 0
+          fi
+
+          issue_json=$(gh api \
+            "repos/$GITHUB_REPOSITORY/issues/$issue_number" \
+            2>/dev/null || true)
+
+          if [ -z "$issue_json" ] || \
+            jq -e 'has("pull_request")' <<<"$issue_json" >/dev/null; then
+            echo "No matching issue found; skipping."
+            exit 0
+          fi
+
+          pr_body=$(gh api \
+            "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
+            --jq '.body // ""')
+
+          if grep -Eiq \
+            "(close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)[[:space:]:]+#$issue_number([^0-9]|$)" \
+            <<<"$pr_body"; then
+            echo "Pull request already contains a closing reference."
+            exit 0
+          fi
+
+          if [ -n "$pr_body" ]; then
+            pr_body="${pr_body}"$'\n\n'
+          fi
+
+          gh api \
+            "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
+            --method PATCH \
+            -f body="${pr_body}Closes #${issue_number}" \
+            >/dev/null
+
       - name: Enable squash auto-merge
+        if: github.event.pull_request.draft == false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr merge --auto --squash "$PR_URL"
+
+  close-originating-issue:
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Close the originating issue if necessary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          issue_number="${PR_BRANCH%%-*}"
+
+          if [[ ! "$issue_number" =~ ^[0-9]+$ ]]; then
+            echo "Branch does not start with an issue number; skipping."
+            exit 0
+          fi
+
+          issue_json=$(gh api \
+            "repos/$GITHUB_REPOSITORY/issues/$issue_number" \
+            2>/dev/null || true)
+
+          if [ -z "$issue_json" ] || \
+            jq -e 'has("pull_request")' <<<"$issue_json" >/dev/null; then
+            echo "No matching issue found; skipping."
+            exit 0
+          fi
+
+          issue_state=$(jq -r '.state' <<<"$issue_json")
+
+          if [ "$issue_state" = "open" ]; then
+            gh api \
+              "repos/$GITHUB_REPOSITORY/issues/$issue_number" \
+              --method PATCH \
+              -f state=closed \
+              -f state_reason=completed \
+              >/dev/null
+          else
+            echo "Issue is already closed."
+          fi
