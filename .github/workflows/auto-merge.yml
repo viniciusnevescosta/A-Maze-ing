@@ -1,4 +1,4 @@
-name: Enable auto-merge
+name: Link and merge pull requests
 
 on:
   pull_request_target:
@@ -80,13 +80,22 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
-          merged=$(gh api \
-            "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
-            --jq '.merged')
+          for attempt in 1 2 3 4 5 6; do
+            merged=$(gh api \
+              "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
+              --jq '.merged')
 
-          if [ "$merged" != "true" ]; then
-            gh pr merge --squash "$PR_URL" || true
-          fi
+            if [ "$merged" = "true" ]; then
+              break
+            fi
+
+            if gh pr merge --squash "$PR_URL"; then
+              break
+            fi
+
+            echo "Merge attempt $attempt failed; retrying shortly."
+            sleep 5
+          done
 
           merged=$(gh api \
             "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
