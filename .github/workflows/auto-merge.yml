@@ -1,4 +1,4 @@
-name: Enable auto-merge
+name: Link and merge pull requests
 
 on:
   pull_request_target:
@@ -7,6 +7,9 @@ on:
       - reopened
       - ready_for_review
       - closed
+  pull_request_review:
+    types:
+      - submitted
 
 permissions:
   contents: write
@@ -15,7 +18,7 @@ permissions:
 
 jobs:
   prepare-pull-request:
-    if: github.event.action != 'closed'
+    if: github.event_name == 'pull_request_target' && github.event.action != 'closed'
     runs-on: ubuntu-latest
 
     steps:
@@ -63,15 +66,86 @@ jobs:
             -f body="${pr_body}Closes #${issue_number}" \
             >/dev/null
 
-      - name: Enable squash auto-merge
-        if: github.event.pull_request.draft == false
+  merge-approved-pull-request:
+    if: >-
+      github.event_name == 'pull_request_review' &&
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Merge the approved pull request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            merged=$(gh api \
+              "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
+              --jq '.merged')
+
+            if [ "$merged" = "true" ]; then
+              break
+            fi
+
+            if gh pr merge --squash "$PR_URL"; then
+              break
+            fi
+
+            echo "Merge attempt $attempt failed; retrying shortly."
+            sleep 5
+          done
+
+          merged=$(gh api \
+            "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" \
+            --jq '.merged')
+
+          if [ "$merged" != "true" ]; then
+            echo "Pull request is not mergeable yet; leaving the issue open."
+            exit 1
+          fi
+
+      - name: Close the originating issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          issue_number="${PR_BRANCH%%-*}"
+
+          if [[ ! "$issue_number" =~ ^[0-9]+$ ]]; then
+            echo "Branch does not start with an issue number; skipping."
+            exit 0
+          fi
+
+          issue_json=$(gh api \
+            "repos/$GITHUB_REPOSITORY/issues/$issue_number" \
+            2>/dev/null || true)
+
+          if [ -z "$issue_json" ] || \
+            jq -e 'has("pull_request")' <<<"$issue_json" >/dev/null; then
+            echo "No matching issue found; skipping."
+            exit 0
+          fi
+
+          issue_state=$(jq -r '.state' <<<"$issue_json")
+
+          if [ "$issue_state" = "open" ]; then
+            gh api \
+              "repos/$GITHUB_REPOSITORY/issues/$issue_number" \
+              --method PATCH \
+              -f state=closed \
+              -f state_reason=completed \
+              >/dev/null
+          else
+            echo "Issue is already closed."
+          fi
 
   close-originating-issue:
-    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.action == 'closed' &&
+      github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
