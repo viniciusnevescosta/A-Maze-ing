@@ -36,6 +36,11 @@ lint-strict:
 	$(PYTHON) -m mypy . --strict
 
 test:
-	$(PYTHON) -m pytest -v
+	@$(PYTHON) -m pytest -v; status=$$?; \
+	if [ $$status -eq 5 ]; then \
+		echo "No tests found yet; skipping."; \
+		exit 0; \
+	fi; \
+	exit $$status
 
 check: syntax lint test
