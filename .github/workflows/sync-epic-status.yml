@@ -1,0 +1,100 @@
+name: Sync epic status
+
+on:
+  create:
+  issues:
+    types:
+      - closed
+      - reopened
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - closed
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Child issue number to synchronize
+        required: true
+        type: string
+      dry_run:
+        description: Calculate the Epic status without changing it
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  synchronize:
+    if: >-
+      (github.event_name != 'create' || github.event.ref_type == 'branch') &&
+      (github.event_name != 'pull_request_target' ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+      github.event.pull_request.author_association))
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the trusted automation
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.repository.default_branch }}
+
+      - name: Resolve the originating issue
+        id: context
+        env:
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_NAME: ${{ github.event_name }}
+          CREATED_REF: ${{ github.event.ref }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          REQUESTED_ISSUE: ${{ inputs.issue_number }}
+        run: |
+          force_in_progress=false
+
+          case "$EVENT_NAME" in
+            create)
+              issue_number="${CREATED_REF%%-*}"
+              force_in_progress=true
+              ;;
+            pull_request_target)
+              issue_number="${PR_BRANCH%%-*}"
+              if [ "$EVENT_ACTION" != "closed" ]; then
+                force_in_progress=true
+              fi
+              ;;
+            issues)
+              issue_number="$ISSUE_NUMBER"
+              ;;
+            workflow_dispatch)
+              issue_number="$REQUESTED_ISSUE"
+              ;;
+            *)
+              echo "Unsupported event; skipping."
+              exit 0
+              ;;
+          esac
+
+          if [[ ! "$issue_number" =~ ^[0-9]+$ ]]; then
+            echo "No issue number was found in this event; skipping."
+            exit 0
+          fi
+
+          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
+          echo "force_in_progress=$force_in_progress" >> "$GITHUB_OUTPUT"
+
+      - name: Synchronize the parent epic
+        if: steps.context.outputs.issue_number != ''
+        env:
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+          PROJECT_NUMBER: "9"
+          PROJECT_OWNER: viniciusnevescosta
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash .github/scripts/sync_epic_status.sh \
+            "${{ steps.context.outputs.issue_number }}" \
+            "${{ steps.context.outputs.force_in_progress }}"
