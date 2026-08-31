@@ -9,6 +9,9 @@ repository_owner="${repository%%/*}"
 repository_name="${repository#*/}"
 project_owner="${PROJECT_OWNER:-viniciusnevescosta}"
 project_number="${PROJECT_NUMBER:-9}"
+epics_option_id="${PROJECT_EPICS_OPTION_ID:-a2ba3e03}"
+in_progress_option_id="${PROJECT_IN_PROGRESS_OPTION_ID:-47fc9ee4}"
+done_option_id="${PROJECT_DONE_OPTION_ID:-98236657}"
 dry_run="${DRY_RUN:-false}"
 api_version="2026-03-10"
 
@@ -53,6 +56,7 @@ get_project_item() {
                 fieldValueByName(name: "Status") {
                   ... on ProjectV2ItemFieldSingleSelectValue {
                     name
+                    optionId
                   }
                 }
               }
@@ -125,42 +129,44 @@ if [ -z "$project_id" ] || [ -z "$status_field_id" ]; then
 fi
 
 if [ "$open_count" -eq 0 ]; then
-  target_status="Done"
+  target_option_id="$done_option_id"
 elif [ "$force_in_progress" = "true" ]; then
-  target_status="In progress"
+  target_option_id="$in_progress_option_id"
 else
-  target_status="Epics"
+  target_option_id="$epics_option_id"
 
   while read -r open_number; do
     child_item=$(get_project_item "$open_number")
-    child_status=$(jq -r '.fieldValueByName.name // empty' \
+    child_option_id=$(jq -r '.fieldValueByName.optionId // empty' \
       <<<"$child_item")
 
-    if [ "$child_status" = "In progress" ]; then
-      target_status="In progress"
+    if [ "$child_option_id" = "$in_progress_option_id" ]; then
+      target_option_id="$in_progress_option_id"
       break
     fi
   done < <(jq -r '.[]' <<<"$open_numbers")
+fi
+
+target_status=$(jq -r \
+  --arg target_option_id "$target_option_id" \
+  '.data.user.projectV2.field.options[] |
+    select(.id == $target_option_id) | .name' \
+  <<<"$project_metadata")
+
+if [ -z "$target_status" ] || [ "$target_status" = "null" ]; then
+  echo "Status option '$target_option_id' was not found in the project."
+  exit 1
 fi
 
 parent_item=$(get_project_item "$parent_number")
 parent_item_id=$(jq -r '.id // empty' <<<"$parent_item")
 current_status=$(jq -r '.fieldValueByName.name // empty' \
   <<<"$parent_item")
+current_option_id=$(jq -r '.fieldValueByName.optionId // empty' \
+  <<<"$parent_item")
 
 if [ -z "$parent_item_id" ]; then
   echo "Epic #$parent_number is not present in project $project_owner/$project_number."
-  exit 1
-fi
-
-target_option_id=$(jq -r \
-  --arg target_status "$target_status" \
-  '.data.user.projectV2.field.options[] |
-    select(.name == $target_status) | .id' \
-  <<<"$project_metadata")
-
-if [ -z "$target_option_id" ] || [ "$target_option_id" = "null" ]; then
-  echo "Status option '$target_status' was not found in the project."
   exit 1
 fi
 
@@ -172,14 +178,16 @@ if [ "$dry_run" = "true" ]; then
   exit 0
 fi
 
-if [ "$target_status" = "Done" ] && [ "$parent_state" = "open" ]; then
+if [ "$target_option_id" = "$done_option_id" ] && \
+  [ "$parent_state" = "open" ]; then
   repo_api \
     "repos/$repository/issues/$parent_number" \
     --method PATCH \
     -f state=closed \
     -f state_reason=completed \
     >/dev/null
-elif [ "$target_status" != "Done" ] && [ "$parent_state" = "closed" ]; then
+elif [ "$target_option_id" != "$done_option_id" ] && \
+  [ "$parent_state" = "closed" ]; then
   repo_api \
     "repos/$repository/issues/$parent_number" \
     --method PATCH \
@@ -187,7 +195,7 @@ elif [ "$target_status" != "Done" ] && [ "$parent_state" = "closed" ]; then
     >/dev/null
 fi
 
-if [ "$current_status" != "$target_status" ]; then
+if [ "$current_option_id" != "$target_option_id" ]; then
   project_api \
     -F project_id="$project_id" \
     -F item_id="$parent_item_id" \
