@@ -1,11 +1,11 @@
-PYTHON := python3
+PYTHON ?= python3
 MAIN := a_maze_ing.py
 CONFIG ?= config.txt
 
 .PHONY: install run debug clean lint lint-strict test syntax check
 
 install:
-	$(PYTHON) -m pip install flake8 mypy pytest
+	$(PYTHON) -m pip install -r requirements.txt
 
 run:
 	$(PYTHON) $(MAIN) $(CONFIG)
@@ -16,7 +16,7 @@ debug:
 clean:
 	find . -type d -name "__pycache__" -prune -exec rm -rf {} +
 	find . -type d -name ".mypy_cache" -prune -exec rm -rf {} +
-	find . -type d -name ".pytest_cache" ∏-prune -exec rm -rf {} +
+	find . -type d -name ".pytest_cache" -prune -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 
 syntax:
