@@ -5,6 +5,8 @@ set -euo pipefail
 issue_number="${1:-}"
 force_in_progress="${2:-false}"
 repository="${GITHUB_REPOSITORY:-viniciusnevescosta/A-Maze-ing}"
+repository_owner="${repository%%/*}"
+repository_name="${repository#*/}"
 project_owner="${PROJECT_OWNER:-viniciusnevescosta}"
 project_number="${PROJECT_NUMBER:-9}"
 dry_run="${DRY_RUN:-false}"
@@ -29,8 +31,38 @@ repo_api() {
     "$@"
 }
 
-project_gh() {
-  GH_TOKEN="$PROJECT_TOKEN" gh project "$@"
+project_api() {
+  GH_TOKEN="$PROJECT_TOKEN" gh api graphql "$@"
+}
+
+get_project_item() {
+  local number="$1"
+
+  project_api \
+    -F owner="$repository_owner" \
+    -F name="$repository_name" \
+    -F number="$number" \
+    -f query='
+      query($owner: String!, $name: String!, $number: Int!) {
+        repository(owner: $owner, name: $name) {
+          issue(number: $number) {
+            projectItems(first: 20) {
+              nodes {
+                id
+                project { id }
+                fieldValueByName(name: "Status") {
+                  ... on ProjectV2ItemFieldSingleSelectValue {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }' |
+    jq -c --arg project_id "$project_id" '
+      .data.repository.issue.projectItems.nodes[] |
+      select(.project.id == $project_id)'
 }
 
 parent_json=$(repo_api \
@@ -65,81 +97,67 @@ open_numbers=$(jq '[.[] | select(.state == "open") | .number]' \
   <<<"$subissues_json")
 open_count=$(jq 'length' <<<"$open_numbers")
 
-project_items=""
+project_metadata=$(project_api \
+  -F login="$project_owner" \
+  -F number="$project_number" \
+  -f query='
+    query($login: String!, $number: Int!) {
+      user(login: $login) {
+        projectV2(number: $number) {
+          id
+          field(name: "Status") {
+            ... on ProjectV2SingleSelectField {
+              id
+              options { id name }
+            }
+          }
+        }
+      }
+    }')
+project_id=$(jq -r '.data.user.projectV2.id // empty' \
+  <<<"$project_metadata")
+status_field_id=$(jq -r '.data.user.projectV2.field.id // empty' \
+  <<<"$project_metadata")
+
+if [ -z "$project_id" ] || [ -z "$status_field_id" ]; then
+  echo "Project $project_owner/$project_number or its Status field was not found."
+  exit 1
+fi
 
 if [ "$open_count" -eq 0 ]; then
   target_status="Done"
 elif [ "$force_in_progress" = "true" ]; then
   target_status="In progress"
 else
-  project_items=$(project_gh item-list "$project_number" \
-    --owner "$project_owner" \
-    --format json \
-    --limit 500)
-  in_progress_count=$(jq \
-    --arg repository "$repository" \
-    --argjson open_numbers "$open_numbers" \
-    '[.items[] | select(
-      .status == "In progress" and
-      .content.type == "Issue" and
-      .content.repository == $repository and
-      (.content.number as $number | $open_numbers | index($number)) != null
-    )] | length' \
-    <<<"$project_items")
+  target_status="Epics"
 
-  if [ "$in_progress_count" -gt 0 ]; then
-    target_status="In progress"
-  else
-    target_status="Epics"
-  fi
+  while read -r open_number; do
+    child_item=$(get_project_item "$open_number")
+    child_status=$(jq -r '.fieldValueByName.name // empty' \
+      <<<"$child_item")
+
+    if [ "$child_status" = "In progress" ]; then
+      target_status="In progress"
+      break
+    fi
+  done < <(jq -r '.[]' <<<"$open_numbers")
 fi
 
-if [ -z "$project_items" ]; then
-  project_items=$(project_gh item-list "$project_number" \
-    --owner "$project_owner" \
-    --format json \
-    --limit 500)
-fi
+parent_item=$(get_project_item "$parent_number")
+parent_item_id=$(jq -r '.id // empty' <<<"$parent_item")
+current_status=$(jq -r '.fieldValueByName.name // empty' \
+  <<<"$parent_item")
 
-parent_item_id=$(jq -r \
-  --arg repository "$repository" \
-  --argjson parent_number "$parent_number" \
-  '.items[] | select(
-    .content.type == "Issue" and
-    .content.repository == $repository and
-    .content.number == $parent_number
-  ) | .id' \
-  <<<"$project_items")
-current_status=$(jq -r \
-  --arg repository "$repository" \
-  --argjson parent_number "$parent_number" \
-  '.items[] | select(
-    .content.type == "Issue" and
-    .content.repository == $repository and
-    .content.number == $parent_number
-  ) | .status' \
-  <<<"$project_items")
-
-if [ -z "$parent_item_id" ] || [ "$parent_item_id" = "null" ]; then
+if [ -z "$parent_item_id" ]; then
   echo "Epic #$parent_number is not present in project $project_owner/$project_number."
   exit 1
 fi
 
-project_id=$(project_gh view "$project_number" \
-  --owner "$project_owner" \
-  --format json \
-  --jq '.id')
-project_fields=$(project_gh field-list "$project_number" \
-  --owner "$project_owner" \
-  --format json)
-status_field_id=$(jq -r \
-  '.fields[] | select(.name == "Status") | .id' \
-  <<<"$project_fields")
 target_option_id=$(jq -r \
   --arg target_status "$target_status" \
-  '.fields[] | select(.name == "Status") | .options[] |
+  '.data.user.projectV2.field.options[] |
     select(.name == $target_status) | .id' \
-  <<<"$project_fields")
+  <<<"$project_metadata")
 
 if [ -z "$target_option_id" ] || [ "$target_option_id" = "null" ]; then
   echo "Status option '$target_status' was not found in the project."
@@ -170,11 +188,27 @@ elif [ "$target_status" != "Done" ] && [ "$parent_state" = "closed" ]; then
 fi
 
 if [ "$current_status" != "$target_status" ]; then
-  project_gh item-edit \
-    --id "$parent_item_id" \
-    --project-id "$project_id" \
-    --field-id "$status_field_id" \
-    --single-select-option-id "$target_option_id" \
+  project_api \
+    -F project_id="$project_id" \
+    -F item_id="$parent_item_id" \
+    -F field_id="$status_field_id" \
+    -F option_id="$target_option_id" \
+    -f query='
+      mutation(
+        $project_id: ID!,
+        $item_id: ID!,
+        $field_id: ID!,
+        $option_id: String!
+      ) {
+        updateProjectV2ItemFieldValue(input: {
+          projectId: $project_id,
+          itemId: $item_id,
+          fieldId: $field_id,
+          value: {singleSelectOptionId: $option_id}
+        }) {
+          projectV2Item { id }
+        }
+      }' \
     >/dev/null
 fi
 
