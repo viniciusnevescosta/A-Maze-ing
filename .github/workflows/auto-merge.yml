@@ -12,6 +12,7 @@ on:
       - submitted
 
 permissions:
+  actions: write
   contents: write
   issues: write
   pull-requests: write
@@ -107,6 +108,7 @@ jobs:
           fi
 
       - name: Close the originating issue
+        id: close-issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -128,6 +130,8 @@ jobs:
             exit 0
           fi
 
+          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
+
           issue_state=$(jq -r '.state' <<<"$issue_json")
 
           if [ "$issue_state" = "open" ]; then
@@ -140,6 +144,16 @@ jobs:
           else
             echo "Issue is already closed."
           fi
+
+      - name: Recalculate the parent epic
+        if: steps.close-issue.outputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ steps.close-issue.outputs.issue_number }}
+        run: |
+          gh workflow run sync-epic-status.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            -f issue_number="$ISSUE_NUMBER"
 
   close-originating-issue:
     if: >-
@@ -150,6 +164,7 @@ jobs:
 
     steps:
       - name: Close the originating issue if necessary
+        id: close-issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -171,6 +186,8 @@ jobs:
             exit 0
           fi
 
+          echo "issue_number=$issue_number" >> "$GITHUB_OUTPUT"
+
           issue_state=$(jq -r '.state' <<<"$issue_json")
 
           if [ "$issue_state" = "open" ]; then
@@ -183,3 +200,13 @@ jobs:
           else
             echo "Issue is already closed."
           fi
+
+      - name: Recalculate the parent epic
+        if: steps.close-issue.outputs.issue_number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ steps.close-issue.outputs.issue_number }}
+        run: |
+          gh workflow run sync-epic-status.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            -f issue_number="$ISSUE_NUMBER"
