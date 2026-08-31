@@ -65,6 +65,10 @@ When workflows or automation are changed, verify:
 
 ## Feedback style
 
+Write all review summaries and comments in Brazilian Portuguese (pt-BR).
+Keep code, identifiers, file paths, commands, and exact error messages in
+their original language.
+
 Leave one actionable issue per comment. Explain the failing scenario, its
 impact, and the smallest reasonable correction. Prefer changed lines and avoid
 speculative, cosmetic, or duplicate comments.
