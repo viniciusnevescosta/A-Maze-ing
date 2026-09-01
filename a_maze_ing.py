@@ -2,6 +2,11 @@ import sys
 
 
 def read_config_file(path: str) -> list[str]:
+    """
+        Opens and reads the configuration file safely.
+        Returns the content as a list of strings (lines),
+        without interpreting the data.
+        """
     try:
         with open(path, 'r', encoding='utf-8') as file:
             return [line.strip() for line in file.readlines()]
