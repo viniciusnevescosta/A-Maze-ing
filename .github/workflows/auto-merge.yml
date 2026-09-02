@@ -75,6 +75,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out the trusted branch policy
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Validate the originating issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          result=$(bash .github/scripts/classify_issue_branch.sh \
+            "$PR_BRANCH")
+          classification=$(jq -r '.classification' <<<"$result")
+
+          case "$classification" in
+            unrelated|sub_issue)
+              echo "Branch classification '$classification' is allowed."
+              ;;
+            *)
+              echo "::error::Branch classification '$classification' cannot be merged. Use a sub-issue branch."
+              exit 1
+              ;;
+          esac
+
       - name: Merge the approved pull request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
