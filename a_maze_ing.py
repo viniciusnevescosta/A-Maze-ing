@@ -3,7 +3,7 @@ import sys
 
 def read_config_file(path: str) -> list[str]:
     with open(path, 'r', encoding='utf-8') as file:
-        return [line.rstrip('\n') for line in file]
+        return [line.rstrip('\r\n') for line in file]
 
 
 if len(sys.argv) < 2:
@@ -28,7 +28,7 @@ try:
 except FileNotFoundError:
     print(f"Error: The file '{config_path}' was not found.")
     sys.exit(1)
-except Exception as e:
+except OSError as e:
     print(f"Unexpected error while reading the file: {e}")
     sys.exit(1)
 
