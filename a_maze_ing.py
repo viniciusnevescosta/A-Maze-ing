@@ -51,7 +51,7 @@ if len(sys.argv) > 2:
 
 config_path = sys.argv[1]
 
-config_lines = read_config_file(config_path)
+config_lines = filter_valid_lines(read_config_file(config_path))
 
 print(config_lines)
 sys.exit(0)
