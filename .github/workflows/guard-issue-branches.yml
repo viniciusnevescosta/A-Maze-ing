@@ -1,0 +1,150 @@
+name: Guard issue branches
+
+on:
+  create:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  reject-created-branch:
+    name: Reject invalid issue branch
+    if: github.event_name == 'create' && github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Check out the trusted policy
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Classify the branch
+        id: branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ github.event.ref }}
+        run: |
+          result=$(bash .github/scripts/classify_issue_branch.sh \
+            "$BRANCH_NAME")
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+
+      - name: Reject branches created from Epics or standalone issues
+        env:
+          BRANCH_NAME: ${{ github.event.ref }}
+          CLASSIFICATION: ${{ fromJSON(steps.branch.outputs.result).classification }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ fromJSON(steps.branch.outputs.result).issue_number }}
+        run: |
+          case "$CLASSIFICATION" in
+            unrelated|sub_issue)
+              echo "Branch classification '$CLASSIFICATION' is allowed."
+              exit 0
+              ;;
+            epic)
+              reason="a issue #$ISSUE_NUMBER é um Epic"
+              ;;
+            standalone_issue)
+              reason="a issue #$ISSUE_NUMBER não é uma sub-issue"
+              ;;
+            invalid_parent)
+              reason="a issue #$ISSUE_NUMBER não pertence a um Epic válido"
+              ;;
+            missing_issue)
+              reason="não existe uma issue válida com o número #$ISSUE_NUMBER"
+              ;;
+            *)
+              echo "Unknown classification: $CLASSIFICATION"
+              exit 1
+              ;;
+          esac
+
+          branch_sha=$(gh api \
+            "repos/$GITHUB_REPOSITORY/git/ref/heads/$BRANCH_NAME" \
+            --jq '.object.sha')
+          default_sha=$(gh api \
+            "repos/$GITHUB_REPOSITORY/git/ref/heads/$DEFAULT_BRANCH" \
+            --jq '.object.sha')
+          deletion_note="A branch foi preservada porque já possui uma base diferente da branch padrão."
+
+          if [ "$branch_sha" = "$default_sha" ]; then
+            gh api \
+              "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH_NAME" \
+              --method DELETE
+            deletion_note="A branch foi removida automaticamente antes de receber commits."
+          fi
+
+          if [[ "$ISSUE_NUMBER" =~ ^[0-9]+$ ]] && \
+            [ "$CLASSIFICATION" != "missing_issue" ]; then
+            comment="A branch $BRANCH_NAME foi rejeitada porque $reason."
+            comment+=$'\n\nCrie a branch a partir de uma sub-issue do Epic.'
+            comment+=$'\n\n'"$deletion_note"
+            gh issue comment "$ISSUE_NUMBER" --body "$comment"
+          fi
+
+          echo "::error::Branch rejected because $reason."
+          exit 1
+
+  issue-branch-policy:
+    name: Issue branch policy
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+
+    steps:
+      - name: Check out the trusted policy
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Validate the pull request branch
+        env:
+          BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          result=$(bash .github/scripts/classify_issue_branch.sh \
+            "$BRANCH_NAME")
+          classification=$(jq -r '.classification' <<<"$result")
+          issue_number=$(jq -r '.issue_number' <<<"$result")
+          parent_number=$(jq -r '.parent_number' <<<"$result")
+
+          case "$classification" in
+            unrelated)
+              echo "Branch is not issue-based; the Epic policy does not apply."
+              ;;
+            sub_issue)
+              echo "Issue #$issue_number is a sub-issue of Epic #$parent_number."
+              ;;
+            epic)
+              echo "::error::Issue #$issue_number is an Epic. Create the branch from one of its sub-issues."
+              exit 1
+              ;;
+            standalone_issue)
+              echo "::error::Issue #$issue_number is not a sub-issue of an Epic."
+              exit 1
+              ;;
+            invalid_parent)
+              echo "::error::The parent of issue #$issue_number is not a valid Epic."
+              exit 1
+              ;;
+            missing_issue)
+              echo "::error::Branch starts with #$issue_number, but that issue does not exist."
+              exit 1
+              ;;
+            *)
+              echo "::error::Unknown branch classification: $classification"
+              exit 1
+              ;;
+          esac
