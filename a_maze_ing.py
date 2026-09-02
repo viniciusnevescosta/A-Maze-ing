@@ -22,6 +22,18 @@ def read_config_file(path: str) -> list[str]:
         sys.exit(1)
 
 
+def filter_valid_lines(lines: list[str]) -> list[str]:
+    valid_lines = []
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
+            continue
+        valid_lines.append(line)
+
+    return valid_lines
+
+
 if len(sys.argv) < 2:
     print(
         "Missing config file argument.\n"
