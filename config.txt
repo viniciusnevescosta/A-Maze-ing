@@ -1,0 +1,4 @@
+# Maze dimensions
+
+WIDTH=20
+HEIGHT=15
