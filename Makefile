@@ -20,7 +20,7 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 syntax:
-	$(PYTHON) -m compileall -q .
+	$(PYTHON) -m compileall -q $(MAIN) mazegen
 
 lint:
 	$(PYTHON) -m flake8 .
