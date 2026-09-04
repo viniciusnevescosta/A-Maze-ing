@@ -6,6 +6,7 @@ from mazegen.config.reader import read_config_file
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
 
+
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = sys.argv[1:] if argv is None else argv
 
@@ -26,7 +27,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     config_path = arguments[0]
 
     try:
-        config_lines == read_config_file(config_path)
+        config_lines = read_config_file(config_path)
     except FileNotFoundError:
         print(
             f"Error: The file '{config_path}' was not found.",
@@ -48,7 +49,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
 
-        valid_lines = filter_valid_lines(config_lines)
-
-        print(valid_lines)
-        return 0
+    valid_lines = filter_valid_lines(config_lines)
+    print(valid_lines)
+    return 0
