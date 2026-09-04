@@ -16,7 +16,7 @@ def parse_config_lines(lines: list[str]) -> dict[str, str]:
     config: dict[str, str] = {}
 
     for line in lines:
-        key, value = line.split("=")
-        config[key] = value
+        key, value = line.split("=", 1)
+        config[key.strip()] = value.strip()
 
     return config
