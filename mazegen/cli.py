@@ -1,8 +1,8 @@
 import sys
 from collections.abc import Sequence
 
-from mazegen.config.parser import filter_valid_lines
 from mazegen.config.reader import read_config_file
+from mazegen.config.parser import filter_valid_lines, parse_config_lines
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
 
@@ -49,6 +49,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
 
-    valid_lines = filter_valid_lines(config_lines)
-    print(valid_lines)
+    filtered_lines = filter_valid_lines(config_lines)
+    parsed_config = parse_config_lines(filtered_lines)
+    print(parsed_config)
     return 0
