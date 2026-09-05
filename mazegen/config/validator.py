@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 
-
 ConfigValue = str | int
+
 
 REQUIRED_CONFIG_KEYS = (
     "WIDTH",
@@ -18,9 +18,7 @@ class MissingRequiredKeysError(ValueError):
         self.missing_keys = missing_keys
         keys = ", ".join(missing_keys)
         key_label: str = "key" if len(missing_keys) == 1 else "keys"
-        super().__init__(
-            f"Missing required configuration {key_label}: {keys}"
-        )
+        super().__init__(f"Missing required configuration {key_label}: {keys}")
 
 
 def validate_required_keys(config: Mapping[str, str]) -> None:
@@ -38,7 +36,6 @@ def convert_dimensions(
     config: Mapping[str, str],
 ) -> dict[str, ConfigValue]:
     converted_config: dict[str, ConfigValue] = dict(config)
-
     for key in ("WIDTH", "HEIGHT"):
         try:
             value = int(config[key])
@@ -53,5 +50,4 @@ def convert_dimensions(
             )
 
         converted_config[key] = value
-
     return converted_config
