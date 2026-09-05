@@ -3,6 +3,9 @@ from collections.abc import Sequence
 
 from mazegen.config.reader import read_config_file
 from mazegen.config.parser import filter_valid_lines, parse_config_lines
+from mazegen.config.validator import (
+    MissingRequiredKeysError, validate_required_keys
+)
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
 
