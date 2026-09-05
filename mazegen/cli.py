@@ -53,7 +53,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     filtered_lines = filter_valid_lines(config_lines)
-    parsed_config = parse_config_lines(filtered_lines)
+    try:
+        parsed_config = parse_config_lines(filtered_lines)
+    except ValueError as error:
+        print(
+            f"Config error: {error}",
+            file=sys.stderr
+        )
+        return 1
 
     try:
         validate_required_keys(parsed_config)
