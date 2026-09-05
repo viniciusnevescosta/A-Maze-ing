@@ -1,5 +1,5 @@
 def filter_valid_lines(lines: list[str]) -> list[str]:
-    valid_lines = []
+    valid_lines: list[str] = []
 
     for line in lines:
         stripped = line.strip()
