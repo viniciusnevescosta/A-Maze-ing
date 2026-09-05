@@ -22,4 +22,11 @@ class MissingRequiredKeysError(ValueError):
 
 
 def validate_required_keys(config: Mapping[str, str]) -> None:
-    pass
+    missing_keys: list[str] = []
+
+    for key in REQUIRED_CONFIG_KEYS:
+        if key not in config:
+            missing_keys.append(key)
+
+    if missing_keys:
+        raise MissingRequiredKeysError(tuple(missing_keys))
