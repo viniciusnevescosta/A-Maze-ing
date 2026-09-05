@@ -13,14 +13,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if len(arguments) < 1:
         print(
             f"Missing config file argument.\n{USAGE}",
-            file=sys.stderr,
+            file=sys.stderr
         )
         return 1
 
     if len(arguments) > 1:
         print(
             f"Too many arguments.\n{USAGE}",
-            file=sys.stderr,
+            file=sys.stderr
         )
         return 1
 
@@ -38,14 +38,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"Error: Permission denied while reading "
             f"the file '{config_path}'.",
-            file=sys.stderr,
+            file=sys.stderr
         )
         return 1
     except OSError as error:
         print(
             f"Unexpected error while reading the file: "
             f"'{config_path}': {error}",
-            file=sys.stderr,
+            file=sys.stderr
         )
         return 1
 
