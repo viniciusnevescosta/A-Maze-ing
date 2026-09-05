@@ -55,6 +55,7 @@ def validate_unknown_keys(config: Mapping[str, str]) -> None:
 
 def convert_dimensions(config: Mapping[str, str]) -> dict[str, ConfigValue]:
     converted_config: dict[str, ConfigValue] = dict(config)
+
     for key in ("WIDTH", "HEIGHT"):
         try:
             value = int(config[key])
