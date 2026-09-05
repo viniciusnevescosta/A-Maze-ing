@@ -24,9 +24,9 @@ def parse_config_lines(lines: list[str]) -> dict[str, str]:
         value = value.strip()
 
         if not key:
-            raise ValueError(f"Empty key detected in line: '{line}'")
+            raise ValueError(f"Empty key in line: '{line}'")
         if not value:
-            raise ValueError(f"Empty value detected '{key}' in line: '{line}'")
+            raise ValueError(f"Empty value for key '{key}' in line: '{line}'")
 
         config[key] = value
     return config
