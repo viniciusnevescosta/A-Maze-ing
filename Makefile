@@ -20,11 +20,11 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 syntax:
-	$(PYTHON) -m compileall -q .
+	$(PYTHON) -m compileall -q $(MAIN) mazegen
 
 lint:
-	$(PYTHON) -m flake8 .
-	$(PYTHON) -m mypy . \
+	$(PYTHON) -m flake8 $(MAIN) mazegen
+	$(PYTHON) -m mypy $(MAIN) mazegen \
 		--warn-return-any \
 		--warn-unused-ignores \
 		--ignore-missing-imports \
@@ -32,8 +32,8 @@ lint:
 		--check-untyped-defs
 
 lint-strict:
-	$(PYTHON) -m flake8 .
-	$(PYTHON) -m mypy . --strict
+	$(PYTHON) -m flake8 $(MAIN) mazegen
+	$(PYTHON) -m mypy $(MAIN) mazegen --strict
 
 test:
 	@$(PYTHON) -m pytest -v; status=$$?; \
