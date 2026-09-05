@@ -79,6 +79,7 @@ def convert_config_perfect(
 ) -> dict[str, ConfigValue]:
     converted_config: dict[str, ConfigValue] = dict(config)
     perfect_value = config["PERFECT"]
+
     if perfect_value == "True":
         converted_config["PERFECT"] = True
     elif perfect_value == "False":
