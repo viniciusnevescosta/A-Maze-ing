@@ -54,7 +54,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     filtered_lines = filter_valid_lines(config_lines)
     parsed_config = parse_config_lines(filtered_lines)
-    
+
     try:
         validate_required_keys(parsed_config)
     except MissingRequiredKeysError as error:
@@ -63,6 +63,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr
         )
         return 1
-    
+
     print(parsed_config)
     return 0
