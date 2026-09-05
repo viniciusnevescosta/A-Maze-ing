@@ -4,7 +4,10 @@ from collections.abc import Sequence
 from mazegen.config.reader import read_config_file
 from mazegen.config.parser import filter_valid_lines, parse_config_lines
 from mazegen.config.validator import (
-    MissingRequiredKeysError, validate_required_keys
+    MissingRequiredKeysError,
+    UnknownConfigKeysError,
+    validate_required_keys,
+    validate_unknown_keys
 )
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
@@ -63,8 +66,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
 
     try:
+        validate_unknown_keys(parsed_config)
         validate_required_keys(parsed_config)
     except MissingRequiredKeysError as error:
+        print(
+            f"Config error: {error}",
+            file=sys.stderr
+        )
+        return 1
+    except UnknownConfigKeysError as error:
         print(
             f"Config error: {error}",
             file=sys.stderr
