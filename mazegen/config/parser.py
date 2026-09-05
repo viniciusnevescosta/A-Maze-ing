@@ -30,3 +30,23 @@ def parse_config_lines(lines: list[str]) -> dict[str, str]:
 
         config[key] = value
     return config
+
+
+def parse_coordinate(value: str) -> tuple[int, int]:
+    components: list[str] = value.split(",")
+
+    if len(components) != 2:
+        raise ValueError(
+            f"Invalid coordinate format: expected 'x,y', got '{value}'"
+        )
+
+    x, y = components
+    try:
+        x_coordinate: int = int(x)
+        y_coordinate: int = int(y)
+    except ValueError as error:
+        raise ValueError(
+            f"Invalid coordinate components: expected integers, got '{value}'"
+        ) from error
+
+    return (x_coordinate, y_coordinate)
