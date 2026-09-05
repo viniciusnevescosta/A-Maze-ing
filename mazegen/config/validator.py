@@ -1,6 +1,6 @@
 from collections.abc import Mapping
 
-ConfigValue = str | int
+ConfigValue = str | int | bool
 
 
 REQUIRED_CONFIG_KEYS = (
@@ -71,4 +71,21 @@ def convert_config_dimensions(
             )
 
         converted_config[key] = value
+    return converted_config
+
+
+def convert_config_perfect(
+    config: Mapping[str, ConfigValue],
+) -> dict[str, ConfigValue]:
+    converted_config: dict[str, ConfigValue] = dict(config)
+    perfect_value = config["PERFECT"]
+
+    if perfect_value == "True":
+        converted_config["PERFECT"] = True
+    elif perfect_value == "False":
+        converted_config["PERFECT"] = False
+    else:
+        raise ValueError(
+            f"PERFECT must be 'True' or 'False': '{perfect_value}'"
+        )
     return converted_config
