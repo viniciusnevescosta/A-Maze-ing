@@ -41,6 +41,7 @@ def validate_required_keys(config: Mapping[str, str]) -> None:
     if missing_keys:
         raise MissingRequiredKeysError(tuple(missing_keys))
 
+
 def validate_unknown_keys(config: Mapping[str, str]) -> None:
     unknown_keys: list[str] = []
 
