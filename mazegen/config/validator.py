@@ -41,10 +41,18 @@ def validate_required_keys(config: Mapping[str, str]) -> None:
     if missing_keys:
         raise MissingRequiredKeysError(tuple(missing_keys))
 
+def validate_unknown_keys(config: Mapping[str, str]) -> None:
+    unknown_keys: list[str] = []
 
-def convert_dimensions(
-    config: Mapping[str, str],
-) -> dict[str, ConfigValue]:
+    for key in config:
+        if key not in REQUIRED_CONFIG_KEYS:
+            unknown_keys.append(key)
+
+    if unknown_keys:
+        raise UnknownConfigKeysError(tuple(unknown_keys))
+
+
+def convert_dimensions(config: Mapping[str, str]) -> dict[str, ConfigValue]:
     converted_config: dict[str, ConfigValue] = dict(config)
     for key in ("WIDTH", "HEIGHT"):
         try:
@@ -61,14 +69,3 @@ def convert_dimensions(
 
         converted_config[key] = value
     return converted_config
-
-
-def validate_unknown_keys(config: Mapping[str, str]) -> None:
-    unknown_keys: list[str] = []
-
-    for key in config:
-        if key not in REQUIRED_CONFIG_KEYS:
-            unknown_keys.append(key)
-
-    if unknown_keys:
-        raise UnknownConfigKeysError(tuple(unknown_keys))
