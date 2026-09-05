@@ -1,6 +1,8 @@
 from collections.abc import Mapping
 
 
+ConfigValue = str | int
+
 REQUIRED_CONFIG_KEYS = (
     "WIDTH",
     "HEIGHT",
@@ -30,3 +32,26 @@ def validate_required_keys(config: Mapping[str, str]) -> None:
 
     if missing_keys:
         raise MissingRequiredKeysError(tuple(missing_keys))
+
+
+def convert_dimensions(
+    config: Mapping[str, str],
+) -> dict[str, ConfigValue]:
+    converted_config: dict[str, ConfigValue] = dict(config)
+
+    for key in ("WIDTH", "HEIGHT"):
+        try:
+            value = int(config[key])
+        except ValueError as error:
+            raise ValueError(
+                f"{key} must be an integer: '{config[key]}'"
+            ) from error
+
+        if value <= 0:
+            raise ValueError(
+                f"{key} must be greater than zero: '{config[key]}'"
+            )
+
+        converted_config[key] = value
+
+    return converted_config
