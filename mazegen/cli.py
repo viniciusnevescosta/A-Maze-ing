@@ -9,6 +9,7 @@ from mazegen.config.validator import (
     validate_required_keys,
     validate_unknown_keys,
 )
+from mazegen.config.config import build_config
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
 
@@ -48,8 +49,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
 
-    filtered_lines = filter_valid_lines(config_lines)
     try:
+        filtered_lines = filter_valid_lines(config_lines)
         parsed_config = parse_config_lines(filtered_lines)
     except ValueError as error:
         print(f"Config error: {error}", file=sys.stderr)
@@ -60,9 +61,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         validate_unknown_keys(parsed_config)
         typed_config = convert_config_dimensions(parsed_config)
         typed_config = convert_config_perfect(typed_config)
+        config = build_config(typed_config)
     except ValueError as error:
         print(f"Config error: {error}", file=sys.stderr)
         return 1
 
-    print(typed_config)
+    print(config)
     return 0
