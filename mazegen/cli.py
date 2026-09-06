@@ -1,5 +1,6 @@
 import sys
 from collections.abc import Sequence
+from typing import cast
 
 from mazegen.config.parser import filter_valid_lines, parse_config_lines
 from mazegen.config.reader import read_config_file
@@ -9,6 +10,7 @@ from mazegen.config.validator import (
     validate_required_keys,
     validate_unknown_keys,
 )
+from mazegen.config.config import Config
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
 
@@ -60,9 +62,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         validate_unknown_keys(parsed_config)
         typed_config = convert_config_dimensions(parsed_config)
         typed_config = convert_config_perfect(typed_config)
+        config = Config(
+            width=cast(int, typed_config["WIDTH"]),
+            height=cast(int, typed_config["HEIGHT"]),
+            entry=cast(str, typed_config["ENTRY"]),
+            exit=cast(str, typed_config["EXIT"]),
+            output_file=cast(str, typed_config["OUTPUT_FILE"]),
+            perfect=cast(bool, typed_config["PERFECT"]),
+        )
     except ValueError as error:
         print(f"Config error: {error}", file=sys.stderr)
         return 1
 
-    print(typed_config)
+    print(config)
     return 0
