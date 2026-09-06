@@ -57,6 +57,7 @@ def convert_config_dimensions(
     config: Mapping[str, str],
 ) -> dict[str, ConfigValue]:
     converted_config: dict[str, ConfigValue] = dict(config)
+
     for key in REQUIRED_CONFIG_KEYS[:2]:
         try:
             value = int(config[key])
