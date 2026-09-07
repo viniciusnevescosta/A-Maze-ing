@@ -1,6 +1,10 @@
 from collections.abc import Mapping
+from typing import cast
 
-ConfigValue = str | int | bool
+from mazegen.config.parser import parse_coordinate
+
+Coordinate = tuple[int, int]
+ConfigValue = str | int | bool | Coordinate
 
 
 REQUIRED_CONFIG_KEYS = (
@@ -27,8 +31,7 @@ class UnknownConfigKeysError(ValueError):
         keys = ", ".join(unknown_keys)
         key_label: str = "key" if len(unknown_keys) == 1 else "keys"
         super().__init__(
-            f"unknown configuration {key_label}: {keys}"
-        )
+            f"unknown configuration {key_label}: {keys}")
 
 
 def validate_required_keys(config: Mapping[str, str]) -> None:
@@ -51,6 +54,56 @@ def validate_unknown_keys(config: Mapping[str, str]) -> None:
 
     if unknown_keys:
         raise UnknownConfigKeysError(tuple(unknown_keys))
+
+
+def validate_coordinate_in_bounds(
+    key: str,
+    coordinate: Coordinate,
+    width: int,
+    height: int,
+) -> None:
+    x, y = coordinate
+
+    x_is_valid = 0 <= x < width
+    y_is_valid = 0 <= y < height
+
+    if not (x_is_valid and y_is_valid):
+        raise ValueError(f"{key} must be inside maze bounds: '{coordinate}'")
+
+
+def convert_config_coordinates(
+    config: Mapping[str, ConfigValue],
+) -> dict[str, ConfigValue]:
+    converted_config = dict(config)
+
+    for key in ("ENTRY", "EXIT"):
+        value = cast(str, config[key])
+        converted_config[key] = parse_coordinate(value)
+
+    return converted_config
+
+
+def validate_config_coordinates(
+    config: Mapping[str, ConfigValue],
+) -> None:
+    width = cast(int, config["WIDTH"])
+    height = cast(int, config["HEIGHT"])
+
+    for key in ("ENTRY", "EXIT"):
+        coordinate = cast(Coordinate, config[key])
+
+        validate_coordinate_in_bounds(
+            key=key,
+            coordinate=coordinate,
+            width=width,
+            height=height,
+        )
+
+    entry = cast(Coordinate, config["ENTRY"])
+    exit_coordinate = cast(Coordinate, config["EXIT"])
+
+    if entry == exit_coordinate:
+        raise ValueError("ENTRY and EXIT must be different coordinates")
 
 
 def convert_config_dimensions(
