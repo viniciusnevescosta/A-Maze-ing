@@ -12,6 +12,7 @@ class Config:
     exit: str
     output_file: str
     perfect: bool
+    seed: int | None = None
 
 
 def build_config(values: dict[str, ConfigValue]) -> Config:
@@ -22,4 +23,5 @@ def build_config(values: dict[str, ConfigValue]) -> Config:
         exit=cast(str, values["EXIT"]),
         output_file=cast(str, values["OUTPUT_FILE"]),
         perfect=cast(bool, values["PERFECT"]),
+        seed=cast(int | None, values.get("SEED")),
     )
