@@ -159,11 +159,13 @@ def convert_config_seed(
     if "SEED" not in config:
         return converted_config
 
+    seed_text = cast(str, config["SEED"])
+
     try:
-        seed_value = int(converted_config["SEED"])
+        seed_value = int(seed_text)
     except ValueError as error:
         raise ValueError(
-            f"SEED must be an integer: '{config['SEED']}'"
+            f"SEED must be an integer: '{seed_text}'"
         ) from error
 
     converted_config["SEED"] = seed_value
