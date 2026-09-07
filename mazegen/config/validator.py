@@ -16,6 +16,12 @@ REQUIRED_CONFIG_KEYS = (
     "PERFECT",
 )
 
+OPTIONAL_CONFIG_KEYS = (
+    "SEED",
+)
+
+ALLOWED_CONFIG_KEYS = REQUIRED_CONFIG_KEYS + OPTIONAL_CONFIG_KEYS
+
 
 class MissingRequiredKeysError(ValueError):
     def __init__(self, missing_keys: tuple[str, ...]) -> None:
@@ -49,7 +55,7 @@ def validate_unknown_keys(config: Mapping[str, str]) -> None:
     unknown_keys: list[str] = []
 
     for key in config:
-        if key not in REQUIRED_CONFIG_KEYS:
+        if key not in ALLOWED_CONFIG_KEYS:
             unknown_keys.append(key)
 
     if unknown_keys:
@@ -142,4 +148,23 @@ def convert_config_perfect(
         raise ValueError(
             f"PERFECT must be 'True' or 'False': '{perfect_value}'"
         )
+    return converted_config
+
+
+def convert_config_seed(
+    config: Mapping[str, ConfigValue],
+) -> dict[str, ConfigValue]:
+    converted_config: dict[str, ConfigValue] = dict(config)
+
+    if "SEED" not in config:
+        return converted_config
+
+    try:
+        seed_value = int(converted_config["SEED"])
+    except ValueError as error:
+        raise ValueError(
+            f"SEED must be an integer: '{config['SEED']}'"
+        ) from error
+
+    converted_config["SEED"] = seed_value
     return converted_config

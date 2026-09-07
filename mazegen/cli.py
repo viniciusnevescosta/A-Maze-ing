@@ -9,6 +9,7 @@ from mazegen.config.validator import (
     convert_config_dimensions,
     convert_config_perfect,
     validate_config_coordinates,
+    convert_config_seed,
     validate_required_keys,
     validate_unknown_keys,
 )
@@ -65,6 +66,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         typed_config = convert_config_perfect(typed_config)
         typed_config = convert_config_coordinates(typed_config)
         validate_config_coordinates(typed_config)
+        typed_config = convert_config_seed(typed_config)
         config = build_config(typed_config)
     except ValueError as error:
         print(f"Config error: {error}", file=sys.stderr)
