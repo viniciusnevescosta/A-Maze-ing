@@ -12,6 +12,12 @@ REQUIRED_CONFIG_KEYS = (
     "PERFECT",
 )
 
+OPTIONAL_CONFIG_KEYS = (
+    "SEED",
+)
+
+ALLOWED_CONFIG_KEYS = REQUIRED_CONFIG_KEYS + OPTIONAL_CONFIG_KEYS
+
 
 class MissingRequiredKeysError(ValueError):
     def __init__(self, missing_keys: tuple[str, ...]) -> None:
@@ -46,7 +52,7 @@ def validate_unknown_keys(config: Mapping[str, str]) -> None:
     unknown_keys: list[str] = []
 
     for key in config:
-        if key not in REQUIRED_CONFIG_KEYS:
+        if key not in ALLOWED_CONFIG_KEYS:
             unknown_keys.append(key)
 
     if unknown_keys:

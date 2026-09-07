@@ -12,6 +12,7 @@ class Config:
     exit: str
     output_file: str
     perfect: bool
+    seed: int | None = None
 
 
 def build_config(values: dict[str, ConfigValue]) -> Config:
