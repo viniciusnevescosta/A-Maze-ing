@@ -96,3 +96,22 @@ def convert_config_perfect(
             f"PERFECT must be 'True' or 'False': '{perfect_value}'"
         )
     return converted_config
+
+
+def convert_config_seed(
+    config: Mapping[str, ConfigValue],
+) -> dict[str, ConfigValue]:
+    converted_config: dict[str, ConfigValue] = dict(config)
+
+    if "SEED" not in config:
+        return converted_config
+
+    try:
+        seed_value = int(converted_config["SEED"])
+    except ValueError as error:
+        raise ValueError(
+            f"SEED must be an integer: '{config['SEED']}'"
+        ) from error
+
+    converted_config["SEED"] = seed_value
+    return converted_config
