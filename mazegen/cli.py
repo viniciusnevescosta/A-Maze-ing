@@ -6,6 +6,7 @@ from mazegen.config.reader import read_config_file
 from mazegen.config.validator import (
     convert_config_dimensions,
     convert_config_perfect,
+    convert_config_seed,
     validate_required_keys,
     validate_unknown_keys,
 )
@@ -61,6 +62,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         validate_unknown_keys(parsed_config)
         typed_config = convert_config_dimensions(parsed_config)
         typed_config = convert_config_perfect(typed_config)
+        typed_config = convert_config_seed(typed_config)
         config = build_config(typed_config)
     except ValueError as error:
         print(f"Config error: {error}", file=sys.stderr)
