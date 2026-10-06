@@ -24,7 +24,7 @@ syntax:
 
 lint:
 	$(PYTHON) -m flake8 $(MAIN) mazegen
-	$(PYTHON) -m mypy $(MAIN) mazegen \
+	$(PYTHON) -m mypy $(MAIN) mazegen --strict \
 		--warn-return-any \
 		--warn-unused-ignores \
 		--ignore-missing-imports \
