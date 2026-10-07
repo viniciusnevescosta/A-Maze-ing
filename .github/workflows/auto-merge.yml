@@ -13,6 +13,7 @@ on:
 
 permissions:
   actions: write
+  checks: read
   contents: write
   issues: write
   pull-requests: write
@@ -99,11 +100,19 @@ jobs:
               ;;
           esac
 
+      - name: Wait for successful CI on the approved code
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/wait_for_pr_ci.sh
+
       - name: Merge the approved pull request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           for attempt in 1 2 3 4 5 6; do
             merged=$(gh api \
@@ -114,7 +123,7 @@ jobs:
               break
             fi
 
-            if gh pr merge --squash "$PR_URL"; then
+            if gh pr merge --squash --match-head-commit "$EXPECTED_HEAD_SHA" "$PR_URL"; then
               break
             fi
 
