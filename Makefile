@@ -23,8 +23,8 @@ syntax:
 	$(PYTHON) -m compileall -q $(MAIN) mazegen
 
 lint:
-	$(PYTHON) -m flake8 $(MAIN) mazegen
-	$(PYTHON) -m mypy $(MAIN) mazegen --strict \
+	$(PYTHON) -m flake8 .
+	$(PYTHON) -m mypy . --strict \
 		--warn-return-any \
 		--warn-unused-ignores \
 		--ignore-missing-imports \
