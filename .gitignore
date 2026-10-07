@@ -11,3 +11,4 @@ env/
 
 # Arquivos de sistema do macOS
 .DS_Store
+/.delta/

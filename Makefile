@@ -32,8 +32,8 @@ lint:
 		--check-untyped-defs
 
 lint-strict:
-	$(PYTHON) -m flake8 .
-	$(PYTHON) -m mypy . --strict
+	$(PYTHON) -m flake8 $(MAIN) mazegen
+	$(PYTHON) -m mypy $(MAIN) mazegen --strict
 
 test:
 	@$(PYTHON) -m pytest -v; status=$$?; \
