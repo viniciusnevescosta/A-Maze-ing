@@ -1,4 +1,8 @@
+from typing import Literal
+
 from mazegen.cell import Cell
+
+Direction = Literal["north", "east", "south", "west"]
 
 
 class MazeGenerator:
@@ -46,8 +50,45 @@ class MazeGenerator:
             ValueError: If the coordinates are outside the maze.
         """
         if not (0 <= x < self.width and 0 <= y < self.height):
-            raise ValueError(
-                f"Coordinates outside maze bounds: ({x}, {y})"
-            )
+            raise ValueError(f"Coordinates outside maze bounds: ({x}, {y})")
 
         return self.grid[y][x]
+
+    def get_neighbors(
+        self,
+        x: int,
+        y: int,
+    ) -> dict[Direction, tuple[int, int]]:
+        """Return existing orthogonal neighbors and their directions.
+
+        Neighbors are returned in north, east, south, west order.
+        Walls are not considered when finding neighbors.
+
+        Args:
+            x: Column index of the source cell.
+            y: Row index of the source cell.
+
+        Returns:
+            A mapping from each valid direction to neighbor coordinates.
+
+        Raises:
+            ValueError: If the source coordinates are outside the maze.
+        """
+        self.get_cell(x, y)
+
+        candidates: dict[Direction, tuple[int, int]] = {
+            "north": (x, y - 1),
+            "east": (x + 1, y),
+            "south": (x, y + 1),
+            "west": (x - 1, y),
+        }
+
+        neighbors: dict[Direction, tuple[int, int]] = {}
+
+        for direction, coordinate in candidates.items():
+            neighbor_x, neighbor_y = coordinate
+
+            if 0 <= neighbor_x < self.width and 0 <= neighbor_y < self.height:
+                neighbors[direction] = coordinate
+
+        return neighbors
