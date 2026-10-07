@@ -92,3 +92,52 @@ class MazeGenerator:
                 neighbors[direction] = coordinate
 
         return neighbors
+
+    def remove_wall(
+        self,
+        x: int,
+        y: int,
+        neighbor_x: int,
+        neighbor_y: int,
+    ) -> None:
+        """Open the shared wall between two orthogonally adjacent cells.
+
+        Args:
+            x: Column index of the first cell.
+            y: Row index of the first cell.
+            neighbor_x: Column index of the second cell.
+            neighbor_y: Row index of the second cell.
+
+        Raises:
+            ValueError: If either cell is outside the maze or the cells
+                are not orthogonally adjacent.
+        """
+        cell = self.get_cell(x, y)
+        neighbor = self.get_cell(neighbor_x, neighbor_y)
+
+        neighbors = self.get_neighbors(x, y)
+        direction: Direction | None = None
+
+        for candidate_direction, coordinate in neighbors.items():
+            if coordinate == (neighbor_x, neighbor_y):
+                direction = candidate_direction
+                break
+
+        if direction is None:
+            raise ValueError(
+                "Cells must be orthogonally adjacent: "
+                f"({x}, {y}) and ({neighbor_x}, {neighbor_y})"
+            )
+
+        if direction == "north":
+            cell.north = False
+            neighbor.south = False
+        elif direction == "east":
+            cell.east = False
+            neighbor.west = False
+        elif direction == "south":
+            cell.south = False
+            neighbor.north = False
+        elif direction == "west":
+            cell.west = False
+            neighbor.east = False
