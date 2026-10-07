@@ -141,3 +141,39 @@ class MazeGenerator:
         elif direction == "west":
             cell.west = False
             neighbor.east = False
+
+    def validate_external_walls(self) -> None:
+        """Check that every external wall is closed.
+
+        Raises:
+            ValueError: If an external wall is open.
+        """
+        for x in range(self.width):
+            top_cell = self.get_cell(x, 0)
+            bottom_cell = self.get_cell(x, self.height - 1)
+
+            if not top_cell.north:
+                raise ValueError(
+                    f"Open external North wall at ({x}, 0)"
+                )
+
+            if not bottom_cell.south:
+                raise ValueError(
+                    "Open external South wall at "
+                    f"({x}, {self.height - 1})"
+                )
+
+        for y in range(self.height):
+            left_cell = self.get_cell(0, y)
+            right_cell = self.get_cell(self.width - 1, y)
+
+            if not left_cell.west:
+                raise ValueError(
+                    f"Open external West wall at (0, {y})"
+                )
+
+            if not right_cell.east:
+                raise ValueError(
+                    "Open external East wall at "
+                    f"({self.width - 1}, {y})"
+                )
