@@ -3,6 +3,7 @@ from mazegen.config.validator import ConfigValue
 
 
 def test_build_config_creates_config_with_seed() -> None:
+    """Verify build config creates config with seed."""
     values: dict[str, ConfigValue] = {
         "WIDTH": 20,
         "HEIGHT": 15,
@@ -27,6 +28,7 @@ def test_build_config_creates_config_with_seed() -> None:
 
 
 def test_build_config_uses_none_when_seed_is_absent() -> None:
+    """Verify build config uses none when seed is absent."""
     values: dict[str, ConfigValue] = {
         "WIDTH": 5,
         "HEIGHT": 4,

@@ -25,12 +25,14 @@ def assert_walls_are_coherent(maze: MazeGenerator) -> None:
 
 
 def test_initial_walls_are_coherent() -> None:
+    """Verify initial walls are coherent."""
     maze = MazeGenerator(width=3, height=3)
 
     assert_walls_are_coherent(maze)
 
 
 def test_remove_wall_opens_east_and_west() -> None:
+    """Verify remove wall opens east and west."""
     maze = MazeGenerator(width=2, height=1)
 
     maze.remove_wall(0, 0, 1, 0)
@@ -41,6 +43,7 @@ def test_remove_wall_opens_east_and_west() -> None:
 
 
 def test_remove_wall_opens_west_and_east() -> None:
+    """Verify remove wall opens west and east."""
     maze = MazeGenerator(width=2, height=1)
 
     maze.remove_wall(1, 0, 0, 0)
@@ -51,6 +54,7 @@ def test_remove_wall_opens_west_and_east() -> None:
 
 
 def test_remove_wall_opens_south_and_north() -> None:
+    """Verify remove wall opens south and north."""
     maze = MazeGenerator(width=1, height=2)
 
     maze.remove_wall(0, 0, 0, 1)
@@ -61,6 +65,7 @@ def test_remove_wall_opens_south_and_north() -> None:
 
 
 def test_remove_wall_opens_north_and_south() -> None:
+    """Verify remove wall opens north and south."""
     maze = MazeGenerator(width=1, height=2)
 
     maze.remove_wall(0, 1, 0, 0)
@@ -71,6 +76,7 @@ def test_remove_wall_opens_north_and_south() -> None:
 
 
 def test_coherence_check_detects_one_sided_horizontal_change() -> None:
+    """Verify coherence check detects one sided horizontal change."""
     maze = MazeGenerator(width=2, height=1)
     maze.get_cell(0, 0).east = False
 
@@ -79,6 +85,7 @@ def test_coherence_check_detects_one_sided_horizontal_change() -> None:
 
 
 def test_coherence_check_detects_one_sided_vertical_change() -> None:
+    """Verify coherence check detects one sided vertical change."""
     maze = MazeGenerator(width=1, height=2)
     maze.get_cell(0, 0).south = False
 

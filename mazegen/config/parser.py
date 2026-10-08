@@ -1,4 +1,5 @@
 def filter_valid_lines(lines: list[str]) -> list[str]:
+    """Return lines that are neither blank nor comments."""
     valid_lines: list[str] = []
 
     for line in lines:
@@ -11,6 +12,7 @@ def filter_valid_lines(lines: list[str]) -> list[str]:
 
 
 def parse_config_lines(lines: list[str]) -> dict[str, str]:
+    """Parse key-value lines; raise ValueError for invalid syntax."""
     config: dict[str, str] = {}
     for line in lines:
         if "=" not in line:
@@ -33,6 +35,7 @@ def parse_config_lines(lines: list[str]) -> dict[str, str]:
 
 
 def parse_coordinate(value: str) -> tuple[int, int]:
+    """Parse an x,y integer pair; raise ValueError for invalid input."""
     components: list[str] = value.split(",")
 
     if len(components) != 2:

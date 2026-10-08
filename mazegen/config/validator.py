@@ -24,7 +24,9 @@ ALLOWED_CONFIG_KEYS = REQUIRED_CONFIG_KEYS + OPTIONAL_CONFIG_KEYS
 
 
 class MissingRequiredKeysError(ValueError):
+    """Report required configuration keys that are missing."""
     def __init__(self, missing_keys: tuple[str, ...]) -> None:
+        """Store the offending keys and build a readable error message."""
         self.missing_keys = missing_keys
         keys = ", ".join(missing_keys)
         key_label: str = "key" if len(missing_keys) == 1 else "keys"
@@ -32,7 +34,9 @@ class MissingRequiredKeysError(ValueError):
 
 
 class UnknownConfigKeysError(ValueError):
+    """Report configuration keys that are not supported."""
     def __init__(self, unknown_keys: tuple[str, ...]) -> None:
+        """Store the offending keys and build a readable error message."""
         self.unknown_keys = unknown_keys
         keys = ", ".join(unknown_keys)
         key_label: str = "key" if len(unknown_keys) == 1 else "keys"
@@ -41,6 +45,7 @@ class UnknownConfigKeysError(ValueError):
 
 
 def validate_required_keys(config: Mapping[str, str]) -> None:
+    """Raise MissingRequiredKeysError if required keys are absent."""
     missing_keys: list[str] = []
 
     for key in REQUIRED_CONFIG_KEYS:
@@ -52,6 +57,7 @@ def validate_required_keys(config: Mapping[str, str]) -> None:
 
 
 def validate_unknown_keys(config: Mapping[str, str]) -> None:
+    """Raise UnknownConfigKeysError if unsupported keys are present."""
     unknown_keys: list[str] = []
 
     for key in config:
@@ -68,6 +74,7 @@ def validate_coordinate_in_bounds(
     width: int,
     height: int,
 ) -> None:
+    """Raise ValueError if a coordinate is outside the maze."""
     x, y = coordinate
 
     x_is_valid = 0 <= x < width
@@ -80,6 +87,7 @@ def validate_coordinate_in_bounds(
 def convert_config_coordinates(
     config: Mapping[str, ConfigValue],
 ) -> dict[str, ConfigValue]:
+    """Return a copy with ENTRY and EXIT parsed as integer pairs."""
     converted_config = dict(config)
 
     for key in ("ENTRY", "EXIT"):
@@ -92,6 +100,7 @@ def convert_config_coordinates(
 def validate_config_coordinates(
     config: Mapping[str, ConfigValue],
 ) -> None:
+    """Raise ValueError for out-of-bounds or identical endpoints."""
     width = cast(int, config["WIDTH"])
     height = cast(int, config["HEIGHT"])
 
@@ -115,6 +124,7 @@ def validate_config_coordinates(
 def convert_config_dimensions(
     config: Mapping[str, str],
 ) -> dict[str, ConfigValue]:
+    """Convert dimensions to positive integers or raise ValueError."""
     converted_config: dict[str, ConfigValue] = dict(config)
 
     for key in REQUIRED_CONFIG_KEYS[:2]:
@@ -137,6 +147,7 @@ def convert_config_dimensions(
 def convert_config_perfect(
     config: Mapping[str, ConfigValue],
 ) -> dict[str, ConfigValue]:
+    """Convert True or False text to a boolean or raise ValueError."""
     converted_config: dict[str, ConfigValue] = dict(config)
     perfect_value = config["PERFECT"]
 
@@ -154,6 +165,7 @@ def convert_config_perfect(
 def convert_config_seed(
     config: Mapping[str, ConfigValue],
 ) -> dict[str, ConfigValue]:
+    """Convert an optional seed to an integer or raise ValueError."""
     converted_config: dict[str, ConfigValue] = dict(config)
 
     if "SEED" not in config:
