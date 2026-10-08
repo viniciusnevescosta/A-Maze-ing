@@ -296,5 +296,64 @@ class MazeGenerator:
         self.reset_visited()
         self.backtrack(start_x, start_y)
         self.validate_external_walls()
+        self.validate_connectivity(start_x, start_y)
 
         return self.grid
+
+    def get_reachable_cells(
+        self,
+        start_x: int = 0,
+        start_y: int = 0,
+    ) -> set[tuple[int, int]]:
+        """Return cells reachable through passages open on both sides.
+
+        Raises:
+            ValueError: If the starting coordinates are invalid.
+        """
+        self.get_cell(start_x, start_y)
+
+        reachable: set[tuple[int, int]] = {(start_x, start_y)}
+        stack: list[tuple[int, int]] = [(start_x, start_y)]
+
+        opposite: dict[Direction, Direction] = {
+            "north": "south",
+            "east": "west",
+            "south": "north",
+            "west": "east",
+        }
+
+        while stack:
+            x, y = stack.pop()
+            cell = self.get_cell(x, y)
+            neighbors = self.get_neighbors(x, y)
+
+            for direction, coordinate in neighbors.items():
+                neighbor_x, neighbor_y = coordinate
+                neighbor = self.get_cell(neighbor_x, neighbor_y)
+
+                if getattr(cell, direction):
+                    continue
+
+                if getattr(neighbor, opposite[direction]):
+                    continue
+
+                if coordinate not in reachable:
+                    reachable.add(coordinate)
+                    stack.append(coordinate)
+
+        return reachable
+
+    def validate_connectivity(
+        self,
+        start_x: int = 0,
+        start_y: int = 0,
+    ) -> None:
+        """Raise ValueError if any cell is unreachable from the start."""
+        reachable = self.get_reachable_cells(start_x, start_y)
+        expected = self.width * self.height
+
+        if len(reachable) != expected:
+            raise ValueError(
+                "Maze is not fully connected: "
+                f"{len(reachable)} of {expected} cells are reachable"
+            )
