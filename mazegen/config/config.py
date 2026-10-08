@@ -6,6 +6,7 @@ from mazegen.config.validator import ConfigValue, Coordinate
 
 @dataclass
 class Config:
+    """Store validated maze configuration values."""
     width: int
     height: int
     entry: Coordinate
@@ -16,6 +17,7 @@ class Config:
 
 
 def build_config(values: dict[str, ConfigValue]) -> Config:
+    """Build a Config object from converted configuration values."""
     return Config(
         width=cast(int, values["WIDTH"]),
         height=cast(int, values["HEIGHT"]),

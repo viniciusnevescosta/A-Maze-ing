@@ -18,6 +18,7 @@ from mazegen.config.validator import (
 
 
 def valid_text_config() -> dict[str, str]:
+    """Return a fresh dictionary with valid configuration text."""
     return {
         "WIDTH": "20",
         "HEIGHT": "15",
@@ -29,10 +30,12 @@ def valid_text_config() -> dict[str, str]:
 
 
 def test_validate_required_keys_accepts_complete_config() -> None:
+    """Verify validate required keys accepts complete config."""
     validate_required_keys(valid_text_config())
 
 
 def test_validate_required_keys_reports_one_missing_key() -> None:
+    """Verify validate required keys reports one missing key."""
     config = valid_text_config()
     del config["ENTRY"]
 
@@ -45,6 +48,7 @@ def test_validate_required_keys_reports_one_missing_key() -> None:
 
 def test_validate_required_keys_reports_all_missing_keys_in_schema_order(
 ) -> None:
+    """Verify missing keys are reported in schema order."""
     config = {"WIDTH": "20"}
 
     with pytest.raises(MissingRequiredKeysError) as error:
@@ -60,6 +64,7 @@ def test_validate_required_keys_reports_all_missing_keys_in_schema_order(
 
 
 def test_validate_unknown_keys_accepts_required_and_optional_keys() -> None:
+    """Verify validate unknown keys accepts required and optional keys."""
     config = valid_text_config()
     config["SEED"] = "42"
 
@@ -67,6 +72,7 @@ def test_validate_unknown_keys_accepts_required_and_optional_keys() -> None:
 
 
 def test_validate_unknown_keys_reports_all_unknown_keys() -> None:
+    """Verify validate unknown keys reports all unknown keys."""
     config = valid_text_config()
     config["COLOR"] = "blue"
     config["ALGORITHM"] = "dfs"
@@ -87,6 +93,7 @@ def test_validate_unknown_keys_reports_all_unknown_keys() -> None:
 def test_validate_coordinate_in_bounds_accepts_valid_coordinates(
     coordinate: tuple[int, int],
 ) -> None:
+    """Verify validate coordinate in bounds accepts valid coordinates."""
     validate_coordinate_in_bounds("ENTRY", coordinate, 20, 15)
 
 
@@ -97,11 +104,13 @@ def test_validate_coordinate_in_bounds_accepts_valid_coordinates(
 def test_validate_coordinate_in_bounds_rejects_invalid_coordinates(
     coordinate: tuple[int, int],
 ) -> None:
+    """Verify validate coordinate in bounds rejects invalid coordinates."""
     with pytest.raises(ValueError, match="ENTRY must be inside maze bounds"):
         validate_coordinate_in_bounds("ENTRY", coordinate, 20, 15)
 
 
 def test_convert_config_coordinates_converts_entry_and_exit() -> None:
+    """Verify convert config coordinates converts entry and exit."""
     config = valid_text_config()
 
     result = convert_config_coordinates(config)
@@ -112,6 +121,7 @@ def test_convert_config_coordinates_converts_entry_and_exit() -> None:
 
 
 def test_convert_config_coordinates_does_not_modify_input() -> None:
+    """Verify convert config coordinates does not modify input."""
     config = valid_text_config()
 
     convert_config_coordinates(config)
@@ -121,6 +131,7 @@ def test_convert_config_coordinates_does_not_modify_input() -> None:
 
 
 def test_validate_config_coordinates_accepts_distinct_coordinates() -> None:
+    """Verify validate config coordinates accepts distinct coordinates."""
     config: Mapping[str, ConfigValue] = {
         "WIDTH": 20,
         "HEIGHT": 15,
@@ -143,6 +154,7 @@ def test_validate_config_coordinates_rejects_out_of_bounds_coordinate(
     entry: tuple[int, int],
     exit_coordinate: tuple[int, int],
 ) -> None:
+    """Verify validate config coordinates rejects out of bounds coordinate."""
     config: Mapping[str, ConfigValue] = {
         "WIDTH": 20,
         "HEIGHT": 15,
@@ -155,6 +167,7 @@ def test_validate_config_coordinates_rejects_out_of_bounds_coordinate(
 
 
 def test_validate_config_coordinates_rejects_equal_entry_and_exit() -> None:
+    """Verify validate config coordinates rejects equal entry and exit."""
     config: Mapping[str, ConfigValue] = {
         "WIDTH": 20,
         "HEIGHT": 15,
@@ -170,6 +183,7 @@ def test_validate_config_coordinates_rejects_equal_entry_and_exit() -> None:
 
 
 def test_convert_config_dimensions_converts_width_and_height() -> None:
+    """Verify convert config dimensions converts width and height."""
     config = valid_text_config()
 
     result = convert_config_dimensions(config)
@@ -180,6 +194,7 @@ def test_convert_config_dimensions_converts_width_and_height() -> None:
 
 
 def test_convert_config_dimensions_does_not_modify_input() -> None:
+    """Verify convert config dimensions does not modify input."""
     config = valid_text_config()
 
     convert_config_dimensions(config)
@@ -199,6 +214,7 @@ def test_convert_config_dimensions_rejects_non_integer(
     key: str,
     value: str,
 ) -> None:
+    """Verify convert config dimensions rejects non integer."""
     config = valid_text_config()
     config[key] = value
 
@@ -219,6 +235,7 @@ def test_convert_config_dimensions_rejects_non_positive_values(
     key: str,
     value: str,
 ) -> None:
+    """Verify convert config dimensions rejects non positive values."""
     config = valid_text_config()
     config[key] = value
 
@@ -234,6 +251,7 @@ def test_convert_config_perfect_converts_exact_boolean_values(
     text: str,
     expected: bool,
 ) -> None:
+    """Verify convert config perfect converts exact boolean values."""
     config: Mapping[str, ConfigValue] = {"PERFECT": text}
 
     result = convert_config_perfect(config)
@@ -244,6 +262,7 @@ def test_convert_config_perfect_converts_exact_boolean_values(
 
 @pytest.mark.parametrize("value", ["true", "false", "1", "yes", ""])
 def test_convert_config_perfect_rejects_invalid_values(value: str) -> None:
+    """Verify convert config perfect rejects invalid values."""
     config: Mapping[str, ConfigValue] = {"PERFECT": value}
 
     with pytest.raises(ValueError, match="PERFECT must be 'True' or 'False'"):
@@ -251,6 +270,7 @@ def test_convert_config_perfect_rejects_invalid_values(value: str) -> None:
 
 
 def test_convert_config_seed_returns_copy_when_seed_is_absent() -> None:
+    """Verify convert config seed returns copy when seed is absent."""
     config: Mapping[str, ConfigValue] = {"WIDTH": 20}
 
     result = convert_config_seed(config)
@@ -267,6 +287,7 @@ def test_convert_config_seed_converts_integer(
     text: str,
     expected: int,
 ) -> None:
+    """Verify convert config seed converts integer."""
     config: Mapping[str, ConfigValue] = {"SEED": text}
 
     result = convert_config_seed(config)
@@ -277,6 +298,7 @@ def test_convert_config_seed_converts_integer(
 
 @pytest.mark.parametrize("value", ["random", "4.2", ""])
 def test_convert_config_seed_rejects_non_integer(value: str) -> None:
+    """Verify convert config seed rejects non integer."""
     config: Mapping[str, ConfigValue] = {"SEED": value}
 
     with pytest.raises(ValueError, match="SEED must be an integer"):
