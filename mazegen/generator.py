@@ -213,3 +213,32 @@ class MazeGenerator:
             return None
 
         return self.random.choice(candidates)
+
+    def step(
+        self,
+        x: int,
+        y: int,
+    ) -> tuple[int, int] | None:
+        """Open a passage to an unvisited neighbor and mark it visited.
+
+        Return the neighbor coordinates, or None if none is available.
+
+        Raises:
+            ValueError: If the current cell is invalid or unvisited.
+        """
+        if not self.is_visited(x, y):
+            raise ValueError(
+                f"Current cell must be visited before a step: ({x}, {y})"
+            )
+
+        neighbor = self.choose_unvisited_neighbor(x, y)
+
+        if neighbor is None:
+            return None
+
+        neighbor_x, neighbor_y = neighbor
+
+        self.remove_wall(x, y, neighbor_x, neighbor_y)
+        self.mark_visited(neighbor_x, neighbor_y)
+
+        return neighbor
