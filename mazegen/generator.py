@@ -15,7 +15,9 @@ class MazeGenerator:
         grid: Cells arranged as grid[y][x].
     """
 
-    def __init__(self, width: int, height: int) -> None:
+    def __init__(
+        self, width: int, height: int, seed: int | None = None
+    ) -> None:
         """Create a grid of independent, fully closed cells.
 
         Args:
