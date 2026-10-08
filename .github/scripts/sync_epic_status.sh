@@ -130,7 +130,8 @@ fi
 
 if [ "$open_count" -eq 0 ]; then
   target_option_id="$done_option_id"
-elif [ "$force_in_progress" = "true" ]; then
+elif [ "$force_in_progress" = "true" ] || \
+  [ "$open_count" -lt "$total_count" ]; then
   target_option_id="$in_progress_option_id"
 else
   target_option_id="$epics_option_id"
@@ -164,6 +165,16 @@ current_status=$(jq -r '.fieldValueByName.name // empty' \
   <<<"$parent_item")
 current_option_id=$(jq -r '.fieldValueByName.optionId // empty' \
   <<<"$parent_item")
+
+# Once started, an epic remains in progress even between active tasks.
+if [ "$target_option_id" = "$epics_option_id" ] && \
+  { [ "$current_option_id" = "$in_progress_option_id" ] || \
+    [ "$current_option_id" = "$done_option_id" ]; }; then
+  target_option_id="$in_progress_option_id"
+  target_status=$(jq -r --arg id "$target_option_id" \
+    '.data.user.projectV2.field.options[] | select(.id == $id) | .name' \
+    <<<"$project_metadata")
+fi
 
 if [ -z "$parent_item_id" ]; then
   echo "Epic #$parent_number is not present in project $project_owner/$project_number."
