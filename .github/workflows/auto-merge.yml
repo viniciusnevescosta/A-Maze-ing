@@ -6,6 +6,7 @@ on:
       - opened
       - reopened
       - ready_for_review
+      - synchronize
       - closed
   pull_request_review:
     types:
@@ -19,6 +20,37 @@ permissions:
   pull-requests: write
 
 jobs:
+  enable-auto-merge:
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.action != 'closed' &&
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'),
+      github.event.pull_request.author_association)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the trusted branch policy
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Enable merge after required checks pass
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          result=$(bash .github/scripts/classify_issue_branch.sh "$PR_BRANCH")
+          classification=$(jq -r '.classification' <<<"$result")
+          case "$classification" in
+            unrelated|sub_issue) ;;
+            *) echo "::error::Invalid issue branch; auto-merge blocked."; exit 1 ;;
+          esac
+          gh pr merge --auto --squash \
+            --match-head-commit "$EXPECTED_HEAD_SHA" "$PR_URL"
+
   prepare-pull-request:
     if: github.event_name == 'pull_request_target' && github.event.action != 'closed'
     runs-on: ubuntu-latest
