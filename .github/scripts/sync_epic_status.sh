@@ -211,7 +211,7 @@ if [ "$current_option_id" != "$target_option_id" ]; then
     -F project_id="$project_id" \
     -F item_id="$parent_item_id" \
     -F field_id="$status_field_id" \
-    -F option_id="$target_option_id" \
+    -f option_id="$target_option_id" \
     -f query='
       mutation(
         $project_id: ID!,
