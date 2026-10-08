@@ -242,3 +242,34 @@ class MazeGenerator:
         self.mark_visited(neighbor_x, neighbor_y)
 
         return neighbor
+
+    def backtrack(
+        self,
+        start_x: int = 0,
+        start_y: int = 0,
+    ) -> None:
+        """Explore the grid using a stack and backtrack at dead ends.
+
+        Raises:
+            ValueError: If the start is invalid or visits already exist.
+        """
+        self.get_cell(start_x, start_y)
+
+        if self.visited:
+            raise ValueError(
+                "Backtracking must start with an empty visit history"
+            )
+
+        stack: list[tuple[int, int]] = []
+
+        self.mark_visited(start_x, start_y)
+        stack.append((start_x, start_y))
+
+        while stack:
+            x, y = stack[-1]
+            neighbor = self.step(x, y)
+
+            if neighbor is None:
+                stack.pop()
+            else:
+                stack.append(neighbor)
