@@ -273,3 +273,28 @@ class MazeGenerator:
                 stack.pop()
             else:
                 stack.append(neighbor)
+
+    def generate_perfect(
+        self,
+        start_x: int = 0,
+        start_y: int = 0,
+    ) -> list[list[Cell]]:
+        """Reset the maze and generate a connected grid without cycles.
+
+        Raises:
+            ValueError: If the starting coordinates are invalid.
+        """
+        self.get_cell(start_x, start_y)
+
+        for row in self.grid:
+            for cell in row:
+                cell.north = True
+                cell.east = True
+                cell.south = True
+                cell.west = True
+
+        self.reset_visited()
+        self.backtrack(start_x, start_y)
+        self.validate_external_walls()
+
+        return self.grid
