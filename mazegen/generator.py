@@ -1,3 +1,4 @@
+from random import Random
 from typing import Literal
 
 from mazegen.cell import Cell
@@ -14,12 +15,15 @@ class MazeGenerator:
         grid: Cells arranged as grid[y][x].
     """
 
-    def __init__(self, width: int, height: int) -> None:
+    def __init__(
+        self, width: int, height: int, seed: int | None = None
+    ) -> None:
         """Create a grid of independent, fully closed cells.
 
         Args:
             width: Number of columns, greater than zero.
             height: Number of rows, greater than zero.
+            seed: Optional seed for reproducible random choices.
 
         Raises:
             ValueError: If either dimension is not greater than zero.
@@ -31,6 +35,7 @@ class MazeGenerator:
         self.height: int = height
         self.grid: list[list[Cell]] = []
         self.visited: set[tuple[int, int]] = set()
+        self.random: Random = Random(seed)
 
         for y in range(height):
             row: list[Cell] = []
@@ -154,14 +159,11 @@ class MazeGenerator:
             bottom_cell = self.get_cell(x, self.height - 1)
 
             if not top_cell.north:
-                raise ValueError(
-                    f"Open external North wall at ({x}, 0)"
-                )
+                raise ValueError(f"Open external North wall at ({x}, 0)")
 
             if not bottom_cell.south:
                 raise ValueError(
-                    "Open external South wall at "
-                    f"({x}, {self.height - 1})"
+                    f"Open external South wall at ({x}, {self.height - 1})"
                 )
 
         for y in range(self.height):
@@ -169,14 +171,11 @@ class MazeGenerator:
             right_cell = self.get_cell(self.width - 1, y)
 
             if not left_cell.west:
-                raise ValueError(
-                    f"Open external West wall at (0, {y})"
-                )
+                raise ValueError(f"Open external West wall at (0, {y})")
 
             if not right_cell.east:
                 raise ValueError(
-                    "Open external East wall at "
-                    f"({self.width - 1}, {y})"
+                    f"Open external East wall at ({self.width - 1}, {y})"
                 )
 
     def mark_visited(self, x: int, y: int) -> None:
@@ -192,3 +191,25 @@ class MazeGenerator:
     def reset_visited(self) -> None:
         """Clear the visit history for a new generation."""
         self.visited.clear()
+
+    def choose_unvisited_neighbor(
+        self,
+        x: int,
+        y: int,
+    ) -> tuple[int, int] | None:
+        """Choose a random unvisited neighbor, or return None.
+
+        Raises:
+            ValueError: If the source coordinates are outside the maze.
+        """
+        neighbors = self.get_neighbors(x, y)
+        candidates: list[tuple[int, int]] = []
+
+        for neighbor_x, neighbor_y in neighbors.values():
+            if not self.is_visited(neighbor_x, neighbor_y):
+                candidates.append((neighbor_x, neighbor_y))
+
+        if not candidates:
+            return None
+
+        return self.random.choice(candidates)
