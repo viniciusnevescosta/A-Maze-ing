@@ -1,0 +1,162 @@
+"""Maze grid storage, coordinate access and shared-wall operations."""
+
+from typing import Literal
+
+from mazegen.cell import Cell
+from mazegen.validation import (
+    get_reachable_cells,
+    validate_connectivity,
+    validate_external_walls,
+)
+
+Direction = Literal["north", "east", "south", "west"]
+
+
+class MazeGrid:
+    """Store independent cells in a grid indexed by grid[y][x]."""
+
+    def __init__(
+        self, width: int, height: int
+    ) -> None:
+        """Create a grid of independent, fully closed cells.
+
+        Args:
+            width: Number of columns, greater than zero.
+            height: Number of rows, greater than zero.
+
+        Raises:
+            ValueError: If either dimension is not greater than zero.
+        """
+        if width <= 0 or height <= 0:
+            raise ValueError("Maze dimensions must be greater than zero")
+
+        self.width: int = width
+        self.height: int = height
+        self.grid: list[list[Cell]] = []
+
+        for y in range(height):
+            row: list[Cell] = []
+
+            for x in range(width):
+                row.append(Cell())
+
+            self.grid.append(row)
+
+    def get_cell(self, x: int, y: int) -> Cell:
+        """Return the cell at the given coordinates.
+
+        Args:
+            x: Column index.
+            y: Row index.
+
+        Raises:
+            ValueError: If the coordinates are outside the maze.
+        """
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            raise ValueError(f"Coordinates outside maze bounds: ({x}, {y})")
+
+        return self.grid[y][x]
+
+    def get_neighbors(
+        self,
+        x: int,
+        y: int,
+    ) -> dict[Direction, tuple[int, int]]:
+        """Return existing orthogonal neighbors and their directions.
+
+        Neighbors are returned in north, east, south, west order.
+        Walls are not considered when finding neighbors.
+
+        Args:
+            x: Column index of the source cell.
+            y: Row index of the source cell.
+
+        Returns:
+            A mapping from each valid direction to neighbor coordinates.
+
+        Raises:
+            ValueError: If the source coordinates are outside the maze.
+        """
+        self.get_cell(x, y)
+
+        candidates: dict[Direction, tuple[int, int]] = {
+            "north": (x, y - 1),
+            "east": (x + 1, y),
+            "south": (x, y + 1),
+            "west": (x - 1, y),
+        }
+
+        neighbors: dict[Direction, tuple[int, int]] = {}
+
+        for direction, coordinate in candidates.items():
+            neighbor_x, neighbor_y = coordinate
+
+            if 0 <= neighbor_x < self.width and 0 <= neighbor_y < self.height:
+                neighbors[direction] = coordinate
+
+        return neighbors
+
+    def remove_wall(
+        self,
+        x: int,
+        y: int,
+        neighbor_x: int,
+        neighbor_y: int,
+    ) -> None:
+        """Open the shared wall between two orthogonally adjacent cells.
+
+        Args:
+            x: Column index of the first cell.
+            y: Row index of the first cell.
+            neighbor_x: Column index of the second cell.
+            neighbor_y: Row index of the second cell.
+
+        Raises:
+            ValueError: If either cell is outside the maze or the cells
+                are not orthogonally adjacent.
+        """
+        cell = self.get_cell(x, y)
+        neighbor = self.get_cell(neighbor_x, neighbor_y)
+
+        neighbors = self.get_neighbors(x, y)
+        direction: Direction | None = None
+
+        for candidate_direction, coordinate in neighbors.items():
+            if coordinate == (neighbor_x, neighbor_y):
+                direction = candidate_direction
+                break
+
+        if direction is None:
+            raise ValueError(
+                "Cells must be orthogonally adjacent: "
+                f"({x}, {y}) and ({neighbor_x}, {neighbor_y})"
+            )
+
+        if direction == "north":
+            cell.north = False
+            neighbor.south = False
+        elif direction == "east":
+            cell.east = False
+            neighbor.west = False
+        elif direction == "south":
+            cell.south = False
+            neighbor.north = False
+        elif direction == "west":
+            cell.west = False
+            neighbor.east = False
+
+    def validate_external_walls(self) -> None:
+        """Raise ValueError if an external wall is open."""
+        validate_external_walls(self)
+
+    def get_reachable_cells(
+        self, start_x: int = 0, start_y: int = 0
+    ) -> set[tuple[int, int]]:
+        """Return cells reachable through passages open on both sides."""
+        return get_reachable_cells(self, start_x, start_y)
+
+    def validate_connectivity(
+        self, start_x: int = 0, start_y: int = 0
+    ) -> None:
+        """Raise ValueError if any cell is unreachable from the start."""
+        validate_connectivity(self, start_x, start_y)
