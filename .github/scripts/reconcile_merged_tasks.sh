@@ -51,10 +51,16 @@ while read -r pr; do
   gh issue close "$number" --repo "$GITHUB_REPOSITORY" --reason completed
   item_id=$(jq -r '.id // empty' <<<"$item")
   if [ -n "$item_id" ]; then
-    GH_TOKEN="$PROJECT_TOKEN" gh project item-edit --id "$item_id" \
-      --project-id PVT_kwHOA_3kws4Bhy9u \
-      --field-id PVTSSF_lAHOA_3kws4Bhy9uzhgtaI8 \
-      --single-select-option-id 98236657
+    GH_TOKEN="$PROJECT_TOKEN" gh api graphql \
+      -F item_id="$item_id" -f query='
+      mutation($item_id: ID!) {
+        updateProjectV2ItemFieldValue(input: {
+          projectId: "PVT_kwHOA_3kws4Bhy9u",
+          itemId: $item_id,
+          fieldId: "PVTSSF_lAHOA_3kws4Bhy9uzhgtaI8",
+          value: {singleSelectOptionId: "98236657"}
+        }) { projectV2Item { id } }
+      }' >/dev/null
   fi
   bash .github/scripts/sync_epic_status.sh "$number"
 done < <(jq -c --arg base "$default_branch" \
