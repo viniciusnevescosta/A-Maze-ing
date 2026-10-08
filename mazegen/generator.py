@@ -30,6 +30,7 @@ class MazeGenerator:
         self.width: int = width
         self.height: int = height
         self.grid: list[list[Cell]] = []
+        self.visited: set[tuple[int, int]] = set()
 
         for y in range(height):
             row: list[Cell] = []
@@ -177,3 +178,17 @@ class MazeGenerator:
                     "Open external East wall at "
                     f"({self.width - 1}, {y})"
                 )
+
+    def mark_visited(self, x: int, y: int) -> None:
+        """Mark an existing cell as visited."""
+        self.get_cell(x, y)
+        self.visited.add((x, y))
+
+    def is_visited(self, x: int, y: int) -> bool:
+        """Return whether an existing cell has been visited."""
+        self.get_cell(x, y)
+        return (x, y) in self.visited
+
+    def reset_visited(self) -> None:
+        """Clear the visit history for a new generation."""
+        self.visited.clear()
