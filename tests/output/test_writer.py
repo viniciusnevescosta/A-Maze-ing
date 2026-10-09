@@ -201,3 +201,41 @@ def test_cli_handles_unsolvable_maze(
     assert "Maze error: unreachable" in captured.err
     assert "Traceback" not in captured.err
     assert output_file.read_text(encoding="utf-8") == "original\n"
+
+
+@pytest.mark.parametrize("width, height", [(2, 2), (6, 5), (7, 4), (7, 5)])
+def test_cli_pattern_size_warning(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    width: int,
+    height: int,
+) -> None:
+    """Warn only for undersized mazes and still write valid output."""
+    output_file = tmp_path / "maze.txt"
+    config_file = tmp_path / "config.txt"
+    config_file.write_text(
+        f"WIDTH={width}\nHEIGHT={height}\nENTRY=0,0\n"
+        f"EXIT={width - 1},{height - 1}\nOUTPUT_FILE={output_file}\n"
+        "PERFECT=True\nSEED=42\n",
+        encoding="utf-8",
+    )
+
+    assert main([str(config_file)]) == 0
+
+    captured = capsys.readouterr()
+    if width < 7 or height < 5:
+        assert "too small for the 42 pattern" in captured.err
+        assert "generating without it" in captured.err
+    else:
+        assert "too small" not in captured.err
+
+    lines = output_file.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == height + 4
+    for row in lines[:height]:
+        assert len(row) == width
+        assert "F" not in row
+    assert lines[height:height + 3] == [
+        "", "0,0", f"{width - 1},{height - 1}"
+    ]
+    assert lines[-1]
+    assert set(lines[-1]) <= set("NESW")

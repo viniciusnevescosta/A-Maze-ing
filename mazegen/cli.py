@@ -14,6 +14,7 @@ from mazegen.input.config.validator import (
     validate_unknown_keys,
 )
 from mazegen.maze.generator import MazeGenerator
+from mazegen.maze.pattern import can_fit_pattern
 from mazegen.maze.solver import path_to_directions, solve_bfs
 from mazegen.output.writer import write_maze
 
@@ -81,6 +82,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         height=config.height,
         seed=config.seed,
     )
+    if not can_fit_pattern(config.width, config.height):
+        print(
+            "Warning: maze is too small for the 42 pattern; "
+            "generating without it.",
+            file=sys.stderr,
+        )
     maze.generate_perfect()
 
     try:
