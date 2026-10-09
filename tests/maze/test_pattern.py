@@ -2,7 +2,11 @@
 
 import pytest
 
-from mazegen.maze.pattern import PATTERN_42, get_pattern_origin
+from mazegen.maze.pattern import (
+    PATTERN_42,
+    can_fit_pattern,
+    get_pattern_origin,
+)
 
 
 @pytest.mark.parametrize(
@@ -69,3 +73,20 @@ def test_pattern_origin_rejects_small_grid(
     """Reject dimensions that cannot contain the pattern."""
     with pytest.raises(ValueError, match="too small"):
         get_pattern_origin(width, height)
+
+
+@pytest.mark.parametrize(
+    "width, height, expected",
+    [
+        (7, 5, True),
+        (20, 15, True),
+        (6, 5, False),
+        (7, 4, False),
+        (1, 1, False),
+        (0, 0, False),
+        (-1, 10, False),
+    ],
+)
+def test_can_fit_pattern(width: int, height: int, expected: bool) -> None:
+    """Check both dimensions against the pattern dimensions."""
+    assert can_fit_pattern(width, height) is expected

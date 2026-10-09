@@ -18,10 +18,18 @@ def get_pattern_origin(width: int, height: int) -> tuple[int, int]:
     pattern_height = len(PATTERN_42)
     pattern_width = len(PATTERN_42[0])
 
-    if width < pattern_width or height < pattern_height:
+    if not can_fit_pattern(width, height):
         raise ValueError("Maze is too small to contain the 42 pattern")
 
     origin_x = (width - pattern_width) // 2
     origin_y = (height - pattern_height) // 2
 
     return origin_x, origin_y
+
+
+def can_fit_pattern(width: int, height: int) -> bool:
+    """Return whether the maze dimensions can contain the 42 pattern."""
+    pattern_height = len(PATTERN_42)
+    pattern_width = len(PATTERN_42[0])
+
+    return width >= pattern_width and height >= pattern_height
