@@ -64,3 +64,40 @@ def solve_bfs(
             queue.append(coordinate)
 
     raise ValueError("Exit is unreachable from entry")
+
+
+def path_to_directions(path: list[Coordinate]) -> str:
+    """Convert adjacent path coordinates into N/E/S/W movements.
+
+    Raises:
+        ValueError: If the path is empty or a movement is invalid.
+    """
+    if not path:
+        raise ValueError("Path must not be empty")
+
+    directions: dict[Coordinate, str] = {
+        (0, -1): "N",
+        (1, 0): "E",
+        (0, 1): "S",
+        (-1, 0): "W",
+    }
+
+    movements: list[str] = []
+
+    for current, following in zip(path, path[1:]):
+        current_x, current_y = current
+        following_x, following_y = following
+
+        delta = (
+            following_x - current_x,
+            following_y - current_y,
+        )
+
+        if delta not in directions:
+            raise ValueError(
+                f"Invalid path movement: {current} -> {following}"
+            )
+
+        movements.append(directions[delta])
+
+    return "".join(movements)
