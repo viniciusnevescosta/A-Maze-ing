@@ -2,7 +2,7 @@ from collections.abc import Mapping
 
 import pytest
 
-from mazegen.config.validator import (
+from mazegen.input.config.validator import (
     ConfigValue,
     MissingRequiredKeysError,
     UnknownConfigKeysError,
@@ -46,8 +46,9 @@ def test_validate_required_keys_reports_one_missing_key() -> None:
     assert str(error.value) == "Missing required configuration key: ENTRY"
 
 
-def test_validate_required_keys_reports_all_missing_keys_in_schema_order(
-) -> None:
+def test_validate_required_keys_reports_all_missing_keys_in_schema_order() -> (
+    None
+):
     """Verify missing keys are reported in schema order."""
     config = {"WIDTH": "20"}
 
@@ -81,9 +82,7 @@ def test_validate_unknown_keys_reports_all_unknown_keys() -> None:
         validate_unknown_keys(config)
 
     assert error.value.unknown_keys == ("COLOR", "ALGORITHM")
-    assert str(error.value) == (
-        "unknown configuration keys: COLOR, ALGORITHM"
-    )
+    assert str(error.value) == ("unknown configuration keys: COLOR, ALGORITHM")
 
 
 @pytest.mark.parametrize(

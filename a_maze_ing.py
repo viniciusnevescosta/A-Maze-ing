@@ -1,6 +1,6 @@
 import sys
 
-from mazegen.cli import main
+from mazegen.input.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())

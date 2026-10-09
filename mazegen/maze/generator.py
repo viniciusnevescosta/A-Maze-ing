@@ -2,8 +2,9 @@
 
 from random import Random
 
-from mazegen.cell import Cell
-from mazegen.grid import Direction as Direction, MazeGrid
+from mazegen.maze.cell import Cell
+from mazegen.maze.grid import Direction as Direction
+from mazegen.maze.grid import MazeGrid
 
 __all__ = ["Direction", "MazeGenerator"]
 

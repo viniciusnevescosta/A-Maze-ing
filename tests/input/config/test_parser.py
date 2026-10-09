@@ -1,6 +1,6 @@
 import pytest
 
-from mazegen.config.parser import (
+from mazegen.input.config.parser import (
     filter_valid_lines,
     parse_config_lines,
     parse_coordinate,

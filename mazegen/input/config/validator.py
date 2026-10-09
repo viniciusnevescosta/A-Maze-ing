@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 from typing import cast
 
-from mazegen.config.parser import parse_coordinate
+from mazegen.input.config.parser import parse_coordinate
 
 Coordinate = tuple[int, int]
 ConfigValue = str | int | bool | Coordinate
@@ -16,15 +16,14 @@ REQUIRED_CONFIG_KEYS = (
     "PERFECT",
 )
 
-OPTIONAL_CONFIG_KEYS = (
-    "SEED",
-)
+OPTIONAL_CONFIG_KEYS = ("SEED",)
 
 ALLOWED_CONFIG_KEYS = REQUIRED_CONFIG_KEYS + OPTIONAL_CONFIG_KEYS
 
 
 class MissingRequiredKeysError(ValueError):
     """Report required configuration keys that are missing."""
+
     def __init__(self, missing_keys: tuple[str, ...]) -> None:
         """Store the offending keys and build a readable error message."""
         self.missing_keys = missing_keys
@@ -35,13 +34,13 @@ class MissingRequiredKeysError(ValueError):
 
 class UnknownConfigKeysError(ValueError):
     """Report configuration keys that are not supported."""
+
     def __init__(self, unknown_keys: tuple[str, ...]) -> None:
         """Store the offending keys and build a readable error message."""
         self.unknown_keys = unknown_keys
         keys = ", ".join(unknown_keys)
         key_label: str = "key" if len(unknown_keys) == 1 else "keys"
-        super().__init__(
-            f"unknown configuration {key_label}: {keys}")
+        super().__init__(f"unknown configuration {key_label}: {keys}")
 
 
 def validate_required_keys(config: Mapping[str, str]) -> None:
@@ -176,9 +175,7 @@ def convert_config_seed(
     try:
         seed_value = int(seed_text)
     except ValueError as error:
-        raise ValueError(
-            f"SEED must be an integer: '{seed_text}'"
-        ) from error
+        raise ValueError(f"SEED must be an integer: '{seed_text}'") from error
 
     converted_config["SEED"] = seed_value
     return converted_config
