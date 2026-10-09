@@ -83,7 +83,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     maze.generate_perfect()
 
     try:
-        write_maze(maze, config.output_file)
+        write_maze(
+            maze,
+            config.output_file,
+            config.entry,
+            config.exit,
+        )
     except OSError as error:
         print(
             f"Error writing output file '{config.output_file}': {error}",
