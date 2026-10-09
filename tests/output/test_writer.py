@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mazegen.input.cli import main
+from mazegen.cli import main
 from mazegen.maze.grid import MazeGrid
 from mazegen.output.writer import write_maze
 
@@ -72,7 +72,7 @@ def test_cli_handles_output_error(
     )
 
     with patch(
-        "mazegen.input.cli.write_maze",
+        "mazegen.cli.write_maze",
         side_effect=PermissionError("Permission denied"),
     ):
         result = main([str(config_file)])
