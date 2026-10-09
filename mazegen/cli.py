@@ -20,7 +20,7 @@ USAGE = "Usage: python3 a_maze_ing.py <config_file>"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Read and validate configuration; return 0 on success or 1 on error."""
+    """Read configuration, generate a maze and write its output file."""
     arguments = sys.argv[1:] if argv is None else argv
 
     if len(arguments) < 1:
