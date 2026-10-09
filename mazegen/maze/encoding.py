@@ -1,6 +1,7 @@
 """Encode maze cell walls as hexadecimal digits."""
 
 from mazegen.maze.cell import Cell
+from mazegen.maze.grid import MazeGrid
 
 
 def cell_to_hex(cell: Cell) -> str:
@@ -30,3 +31,13 @@ def row_to_hex(row: list[Cell]) -> str:
         digits.append(cell_to_hex(cell))
 
     return "".join(digits)
+
+
+def maze_to_hex(maze: MazeGrid) -> list[str]:
+    """Encode the maze as hexadecimal rows in grid order."""
+    rows: list[str] = []
+
+    for row in maze.grid:
+        rows.append(row_to_hex(row))
+
+    return rows
