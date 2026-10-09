@@ -3,7 +3,7 @@
 import pytest
 
 from mazegen.maze.cell import Cell
-from mazegen.maze.encoding import cell_to_hex
+from mazegen.maze.encoding import cell_to_hex, row_to_hex
 
 
 @pytest.mark.parametrize(
@@ -58,3 +58,44 @@ def test_cell_to_hex(
 def test_new_cell_encodes_as_f() -> None:
     """Encode a fully closed default cell as F."""
     assert cell_to_hex(Cell()) == "F"
+
+
+def test_row_to_hex_preserves_order() -> None:
+    """Encode cells in their original left-to-right order."""
+    row = [
+        Cell(north=True, east=False, south=False, west=True),
+        Cell(north=False, east=True, south=False, west=True),
+        Cell(north=True, east=False, south=True, west=False),
+    ]
+
+    result = row_to_hex(row)
+
+    assert result == "9A5"
+    assert len(result) == len(row)
+
+
+@pytest.mark.parametrize("width", [0, 1, 3, 20])
+def test_row_to_hex_matches_row_width(width: int) -> None:
+    """Produce exactly one digit per cell for different row sizes."""
+    row: list[Cell] = []
+
+    for _ in range(width):
+        row.append(Cell())
+
+    assert row_to_hex(row) == "F" * width
+
+
+def test_row_to_hex_uses_cell_encoding() -> None:
+    """Apply the individual cell encoding to every row position."""
+    row = [
+        Cell(),
+        Cell(north=False, east=False, south=False, west=False),
+        Cell(north=True, east=True, south=False, west=False),
+    ]
+
+    result = row_to_hex(row)
+
+    assert len(result) == len(row)
+
+    for cell, digit in zip(row, result):
+        assert digit == cell_to_hex(cell)
