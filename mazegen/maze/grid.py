@@ -154,7 +154,10 @@ class MazeGrid:
         return get_reachable_cells(self, start_x, start_y)
 
     def validate_connectivity(
-        self, start_x: int = 0, start_y: int = 0
+        self,
+        start_x: int = 0,
+        start_y: int = 0,
+        reserved: set[tuple[int, int]] | None = None,
     ) -> None:
-        """Raise ValueError if any cell is unreachable from the start."""
-        validate_connectivity(self, start_x, start_y)
+        """Check connectivity, excluding explicitly reserved pattern cells."""
+        validate_connectivity(self, start_x, start_y, reserved)
