@@ -270,25 +270,23 @@ def test_cli_writes_connected_maze_with_pattern(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "width, height, entry, exit, message",
+    "width, height, entry, exit",
     [
-        (20, 15, "6,5", "19,14", "ENTRY or EXIT belongs"),
-        (20, 15, "0,0", "6,5", "ENTRY or EXIT belongs"),
-        (7, 5, "1,0", "0,4", "not fully connected"),
+        (20, 15, "6,5", "19,14"),
+        (20, 15, "0,0", "6,5"),
+        (7, 5, "1,0", "0,4"),
     ],
 )
-def test_cli_rejects_invalid_pattern_layout(
+def test_cli_protects_endpoints(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
     width: int,
     height: int,
     entry: str,
     exit: str,
-    message: str,
 ) -> None:
-    """Report pattern failures without a traceback or output replacement."""
+    """Keep customized endpoints outside the drawing and connected."""
     output_file = tmp_path / "maze.txt"
-    output_file.write_text("original\n", encoding="utf-8")
     config_file = tmp_path / "config.txt"
     config_file.write_text(
         f"WIDTH={width}\nHEIGHT={height}\nENTRY={entry}\nEXIT={exit}\n"
@@ -296,8 +294,35 @@ def test_cli_rejects_invalid_pattern_layout(
         encoding="utf-8",
     )
 
-    assert main([str(config_file)]) == 1
+    assert main([str(config_file)]) == 0
+
     captured = capsys.readouterr()
-    assert message in captured.err
+    assert "Maze error:" not in captured.err
     assert "Traceback" not in captured.err
-    assert output_file.read_text(encoding="utf-8") == "original\n"
+
+    lines = output_file.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == height + 4
+    assert lines[height:height + 3] == ["", entry, exit]
+
+    for coordinate in (entry, exit):
+        x_text, y_text = coordinate.split(",")
+        assert lines[int(y_text)][int(x_text)] != "F"
+
+    offsets = {
+        "N": (0, -1),
+        "E": (1, 0),
+        "S": (0, 1),
+        "W": (-1, 0),
+    }
+    x_text, y_text = entry.split(",")
+    x, y = int(x_text), int(y_text)
+
+    for direction in lines[-1]:
+        delta_x, delta_y = offsets[direction]
+        x += delta_x
+        y += delta_y
+        assert 0 <= x < width
+        assert 0 <= y < height
+        assert lines[y][x] != "F"
+
+    assert f"{x},{y}" == exit
