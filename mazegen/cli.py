@@ -1,3 +1,5 @@
+"""Coordinate configuration, maze generation and output writing."""
+
 import sys
 from collections.abc import Sequence
 
@@ -15,7 +17,7 @@ from mazegen.input.config.validator import (
 )
 from mazegen.maze.generator import MazeGenerator
 from mazegen.maze.pattern import can_fit_pattern
-from mazegen.maze.pattern_application import apply_pattern
+from mazegen.maze.pattern_application import choose_pattern_cells
 from mazegen.maze.solver import path_to_directions, solve_bfs
 from mazegen.output.writer import write_maze
 
@@ -40,7 +42,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         config_lines = read_config_file(config_path)
     except FileNotFoundError:
         print(
-            f"Error: The file '{config_path}' was not found.", file=sys.stderr
+            f"Error: The file '{config_path}' was not found.",
+            file=sys.stderr,
         )
         return 1
     except PermissionError:
@@ -83,15 +86,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         height=config.height,
         seed=config.seed,
     )
+
     try:
-        if can_fit_pattern(config.width, config.height):
-            maze.reserved = apply_pattern(maze)
-            if config.entry in maze.reserved or config.exit in maze.reserved:
-                raise ValueError("ENTRY or EXIT belongs to the 42 pattern")
-        else:
+        maze.reserved = choose_pattern_cells(
+            maze,
+            config.entry,
+            config.exit,
+        )
+
+        if not maze.reserved:
+            if not can_fit_pattern(config.width, config.height):
+                reason = "maze is too small for the 42 pattern"
+            else:
+                reason = (
+                    "no safe position for the 42 pattern preserves "
+                    "ENTRY, EXIT and corridor connectivity"
+                )
+
             print(
-                "Warning: maze is too small for the 42 pattern; "
-                "generating without it.",
+                f"Warning: {reason}; generating without it.",
                 file=sys.stderr,
             )
 
@@ -115,4 +128,5 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+
     return 0
