@@ -13,6 +13,8 @@ from mazegen.input.config.validator import (
     validate_required_keys,
     validate_unknown_keys,
 )
+from mazegen.maze.generator import MazeGenerator
+from mazegen.output.writer import write_maze
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
 
@@ -73,5 +75,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Config error: {error}", file=sys.stderr)
         return 1
 
-    print(config)
+    maze = MazeGenerator(
+        width=config.width,
+        height=config.height,
+        seed=config.seed,
+    )
+    maze.generate_perfect()
+
+    try:
+        write_maze(maze, config.output_file)
+    except OSError as error:
+        print(
+            f"Error writing output file '{config.output_file}': {error}",
+            file=sys.stderr,
+        )
+        return 1
+
     return 0
