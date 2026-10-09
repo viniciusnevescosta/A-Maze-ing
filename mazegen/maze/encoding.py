@@ -20,3 +20,13 @@ def cell_to_hex(cell: Cell) -> str:
         value |= 1 << 3
 
     return format(value, "X")
+
+
+def row_to_hex(row: list[Cell]) -> str:
+    """Encode a row as one hexadecimal digit per cell."""
+    digits: list[str] = []
+
+    for cell in row:
+        digits.append(cell_to_hex(cell))
+
+    return "".join(digits)
