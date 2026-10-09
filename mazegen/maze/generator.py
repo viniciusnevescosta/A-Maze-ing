@@ -19,6 +19,7 @@ class MazeGenerator(MazeGrid):
         super().__init__(width, height)
         self.visited: set[tuple[int, int]] = set()
         self.random: Random = Random(seed)
+        self.reserved: set[tuple[int, int]] = set()
 
     def mark_visited(self, x: int, y: int) -> None:
         """Mark an existing cell as visited."""
@@ -48,8 +49,13 @@ class MazeGenerator(MazeGrid):
         candidates: list[tuple[int, int]] = []
 
         for neighbor_x, neighbor_y in neighbors.values():
+            coordinate = (neighbor_x, neighbor_y)
+
+            if coordinate in self.reserved:
+                continue
+
             if not self.is_visited(neighbor_x, neighbor_y):
-                candidates.append((neighbor_x, neighbor_y))
+                candidates.append(coordinate)
 
         if not candidates:
             return None
@@ -102,6 +108,9 @@ class MazeGenerator(MazeGrid):
                 "Backtracking must start with an empty visit history"
             )
 
+        if (start_x, start_y) in self.reserved:
+            raise ValueError("Starting cell belongs to the 42 pattern")
+
         stack: list[tuple[int, int]] = []
 
         self.mark_visited(start_x, start_y)
@@ -121,12 +130,19 @@ class MazeGenerator(MazeGrid):
         start_x: int = 0,
         start_y: int = 0,
     ) -> list[list[Cell]]:
-        """Reset the maze and generate a connected grid without cycles.
+        """Generate connected corridors while preserving reserved cells.
 
         Raises:
-            ValueError: If the starting coordinates are invalid.
+            ValueError: If the start or reservations are invalid, or corridors
+                cannot be connected around the pattern.
         """
         self.get_cell(start_x, start_y)
+
+        if (start_x, start_y) in self.reserved:
+            raise ValueError("Starting cell belongs to the 42 pattern")
+
+        for x, y in self.reserved:
+            self.get_cell(x, y)
 
         for row in self.grid:
             for cell in row:
@@ -138,6 +154,10 @@ class MazeGenerator(MazeGrid):
         self.reset_visited()
         self.backtrack(start_x, start_y)
         self.validate_external_walls()
-        self.validate_connectivity(start_x, start_y)
+        self.validate_connectivity(
+            start_x,
+            start_y,
+            reserved=self.reserved,
+        )
 
         return self.grid

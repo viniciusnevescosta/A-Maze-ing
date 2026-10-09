@@ -8,6 +8,7 @@ import pytest
 from mazegen.cli import main
 from mazegen.maze.generator import MazeGenerator
 from mazegen.maze.grid import MazeGrid
+from mazegen.maze.pattern_application import apply_pattern
 from mazegen.maze.solver import path_to_directions, solve_bfs
 from mazegen.output.writer import write_maze
 
@@ -144,7 +145,7 @@ def test_cli_writes_configured_coordinates(tmp_path: Path) -> None:
     assert lines[3:6] == ["", "3,1", "0,2"]
 
     maze = MazeGenerator(4, 3, seed=42)
-    maze.generate_perfect()
+    maze.generate_perfect(3, 1)
     expected = path_to_directions(solve_bfs(maze, (3, 1), (0, 2)))
     assert lines[6] == expected
     assert set(lines[6]) <= set("NESW")
@@ -203,7 +204,7 @@ def test_cli_handles_unsolvable_maze(
     assert output_file.read_text(encoding="utf-8") == "original\n"
 
 
-@pytest.mark.parametrize("width, height", [(2, 2), (6, 5), (7, 4), (7, 5)])
+@pytest.mark.parametrize("width, height", [(2, 2), (6, 5), (7, 4)])
 def test_cli_pattern_size_warning(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -239,3 +240,64 @@ def test_cli_pattern_size_warning(
     ]
     assert lines[-1]
     assert set(lines[-1]) <= set("NESW")
+
+
+def test_cli_writes_connected_maze_with_pattern(tmp_path: Path) -> None:
+    """Include the pattern and the BFS solution in the real CLI output."""
+    output_file = tmp_path / "maze.txt"
+    config_file = tmp_path / "config.txt"
+    config_file.write_text(
+        "WIDTH=20\nHEIGHT=15\nENTRY=0,0\nEXIT=19,14\n"
+        f"OUTPUT_FILE={output_file}\nPERFECT=True\nSEED=42\n",
+        encoding="utf-8",
+    )
+
+    assert main([str(config_file)]) == 0
+    lines = output_file.read_text(encoding="utf-8").splitlines()
+    maze = MazeGenerator(20, 15, seed=42)
+    maze.reserved = apply_pattern(maze)
+    maze.generate_perfect()
+    closed = {
+        (x, y)
+        for y, row in enumerate(lines[:15])
+        for x, digit in enumerate(row)
+        if digit == "F"
+    }
+    assert closed == maze.reserved
+    assert len(lines) == 19
+    assert lines[15:18] == ["", "0,0", "19,14"]
+    assert lines[-1] == path_to_directions(solve_bfs(maze, (0, 0), (19, 14)))
+
+
+@pytest.mark.parametrize(
+    "width, height, entry, exit, message",
+    [
+        (20, 15, "6,5", "19,14", "ENTRY or EXIT belongs"),
+        (20, 15, "0,0", "6,5", "ENTRY or EXIT belongs"),
+        (7, 5, "1,0", "0,4", "not fully connected"),
+    ],
+)
+def test_cli_rejects_invalid_pattern_layout(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    width: int,
+    height: int,
+    entry: str,
+    exit: str,
+    message: str,
+) -> None:
+    """Report pattern failures without a traceback or output replacement."""
+    output_file = tmp_path / "maze.txt"
+    output_file.write_text("original\n", encoding="utf-8")
+    config_file = tmp_path / "config.txt"
+    config_file.write_text(
+        f"WIDTH={width}\nHEIGHT={height}\nENTRY={entry}\nEXIT={exit}\n"
+        f"OUTPUT_FILE={output_file}\nPERFECT=True\nSEED=42\n",
+        encoding="utf-8",
+    )
+
+    assert main([str(config_file)]) == 1
+    captured = capsys.readouterr()
+    assert message in captured.err
+    assert "Traceback" not in captured.err
+    assert output_file.read_text(encoding="utf-8") == "original\n"

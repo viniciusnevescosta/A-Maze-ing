@@ -15,6 +15,7 @@ from mazegen.input.config.validator import (
 )
 from mazegen.maze.generator import MazeGenerator
 from mazegen.maze.pattern import can_fit_pattern
+from mazegen.maze.pattern_application import apply_pattern
 from mazegen.maze.solver import path_to_directions, solve_bfs
 from mazegen.output.writer import write_maze
 
@@ -82,15 +83,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         height=config.height,
         seed=config.seed,
     )
-    if not can_fit_pattern(config.width, config.height):
-        print(
-            "Warning: maze is too small for the 42 pattern; "
-            "generating without it.",
-            file=sys.stderr,
-        )
-    maze.generate_perfect()
-
     try:
+        if can_fit_pattern(config.width, config.height):
+            maze.reserved = apply_pattern(maze)
+            if config.entry in maze.reserved or config.exit in maze.reserved:
+                raise ValueError("ENTRY or EXIT belongs to the 42 pattern")
+        else:
+            print(
+                "Warning: maze is too small for the 42 pattern; "
+                "generating without it.",
+                file=sys.stderr,
+            )
+
+        maze.generate_perfect(*config.entry)
         path = solve_bfs(maze, config.entry, config.exit)
         shortest_path = path_to_directions(path)
 
