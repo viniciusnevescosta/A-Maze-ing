@@ -14,6 +14,7 @@ from mazegen.input.config.validator import (
     validate_unknown_keys,
 )
 from mazegen.maze.generator import MazeGenerator
+from mazegen.maze.solver import path_to_directions, solve_bfs
 from mazegen.output.writer import write_maze
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
@@ -83,17 +84,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     maze.generate_perfect()
 
     try:
+        path = solve_bfs(maze, config.entry, config.exit)
+        shortest_path = path_to_directions(path)
+
         write_maze(
             maze,
             config.output_file,
             config.entry,
             config.exit,
+            shortest_path,
         )
+    except ValueError as error:
+        print(f"Maze error: {error}", file=sys.stderr)
+        return 1
     except OSError as error:
         print(
             f"Error writing output file '{config.output_file}': {error}",
             file=sys.stderr,
         )
         return 1
-
     return 0

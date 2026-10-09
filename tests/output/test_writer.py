@@ -6,7 +6,9 @@ from unittest.mock import patch
 import pytest
 
 from mazegen.cli import main
+from mazegen.maze.generator import MazeGenerator
 from mazegen.maze.grid import MazeGrid
+from mazegen.maze.solver import path_to_directions, solve_bfs
 from mazegen.output.writer import write_maze
 
 
@@ -15,9 +17,9 @@ def test_write_maze_creates_file(tmp_path: Path) -> None:
     maze = MazeGrid(3, 2)
     output_file = tmp_path / "maze.txt"
 
-    write_maze(maze, str(output_file), (0, 0), (1, 1))
+    write_maze(maze, str(output_file), (0, 0), (1, 1), "ES")
 
-    assert output_file.read_bytes() == b"FFF\nFFF\n\n0,0\n1,1\n"
+    assert output_file.read_bytes() == b"FFF\nFFF\n\n0,0\n1,1\nES\n"
 
 
 def test_write_maze_preserves_encoding_order(tmp_path: Path) -> None:
@@ -26,9 +28,9 @@ def test_write_maze_preserves_encoding_order(tmp_path: Path) -> None:
     maze.remove_wall(0, 0, 1, 0)
     output_file = tmp_path / "maze.txt"
 
-    write_maze(maze, str(output_file), (0, 0), (1, 1))
+    write_maze(maze, str(output_file), (0, 0), (1, 0), "E")
 
-    assert output_file.read_text(encoding="utf-8") == "D7\nFF\n\n0,0\n1,1\n"
+    assert output_file.read_text(encoding="utf-8") == "D7\nFF\n\n0,0\n1,0\nE\n"
 
 
 def test_write_maze_replaces_existing_contents(tmp_path: Path) -> None:
@@ -36,9 +38,9 @@ def test_write_maze_replaces_existing_contents(tmp_path: Path) -> None:
     output_file = tmp_path / "maze.txt"
     output_file.write_text("old contents\n", encoding="utf-8")
 
-    write_maze(MazeGrid(1, 1), str(output_file), (0, 0), (0, 0))
+    write_maze(MazeGrid(1, 1), str(output_file), (0, 0), (0, 0), "")
 
-    assert output_file.read_text(encoding="utf-8") == "F\n\n0,0\n0,0\n"
+    assert output_file.read_text(encoding="utf-8") == "F\n\n0,0\n0,0\n\n"
 
 
 def test_write_maze_propagates_write_error(tmp_path: Path) -> None:
@@ -50,7 +52,7 @@ def test_write_maze_propagates_write_error(tmp_path: Path) -> None:
         mock_file.write.side_effect = OSError("Disk full")
 
         with pytest.raises(OSError, match="Disk full"):
-            write_maze(MazeGrid(1, 1), str(output_file), (0, 0), (0, 0))
+            write_maze(MazeGrid(1, 1), str(output_file), (0, 0), (0, 0), "")
 
         mock_open.return_value.__exit__.assert_called_once()
 
@@ -90,11 +92,11 @@ def test_write_maze_preserves_coordinate_order(tmp_path: Path) -> None:
     maze = MazeGrid(4, 3)
     output_file = tmp_path / "maze.txt"
 
-    write_maze(maze, str(output_file), (3, 1), (0, 2))
+    write_maze(maze, str(output_file), (3, 1), (0, 2), "WWWS")
 
     lines = output_file.read_text(encoding="utf-8").splitlines()
 
-    assert lines == ["FFFF", "FFFF", "FFFF", "", "3,1", "0,2"]
+    assert lines == ["FFFF", "FFFF", "FFFF", "", "3,1", "0,2", "WWWS"]
 
 
 @pytest.mark.parametrize(
@@ -114,7 +116,7 @@ def test_invalid_coordinates_preserve_existing_file(
     output_file.write_text("original\n", encoding="utf-8")
 
     with pytest.raises(ValueError, match="outside maze bounds"):
-        write_maze(MazeGrid(2, 2), str(output_file), entry, exit)
+        write_maze(MazeGrid(2, 2), str(output_file), entry, exit, "ES")
 
     assert output_file.read_text(encoding="utf-8") == "original\n"
 
@@ -137,6 +139,65 @@ def test_cli_writes_configured_coordinates(tmp_path: Path) -> None:
     assert main([str(config_file)]) == 0
 
     lines = output_file.read_text(encoding="utf-8").splitlines()
-    assert len(lines) == 6
+    assert len(lines) == 7
     assert all(len(row) == 4 for row in lines[:3])
-    assert lines[3:] == ["", "3,1", "0,2"]
+    assert lines[3:6] == ["", "3,1", "0,2"]
+
+    maze = MazeGenerator(4, 3, seed=42)
+    maze.generate_perfect()
+    expected = path_to_directions(solve_bfs(maze, (3, 1), (0, 2)))
+    assert lines[6] == expected
+    assert set(lines[6]) <= set("NESW")
+    assert output_file.read_bytes().endswith(b"\n")
+
+
+def test_write_maze_places_path_after_exit(tmp_path: Path) -> None:
+    """Write the path after endpoints with LF line endings."""
+    maze = MazeGrid(2, 2)
+    maze.remove_wall(0, 0, 1, 0)
+    maze.remove_wall(1, 0, 1, 1)
+    output_file = tmp_path / "maze.txt"
+
+    write_maze(maze, str(output_file), (0, 0), (1, 1), "ES")
+
+    assert output_file.read_bytes() == b"D3\nFE\n\n0,0\n1,1\nES\n"
+
+
+@pytest.mark.parametrize("shortest_path", ["EX", "es", "E S", "E\nS"])
+def test_invalid_path_preserves_existing_file(
+    tmp_path: Path,
+    shortest_path: str,
+) -> None:
+    """Reject invalid characters before replacing existing contents."""
+    output_file = tmp_path / "maze.txt"
+    output_file.write_text("original\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid shortest path direction"):
+        write_maze(
+            MazeGrid(2, 2), str(output_file), (0, 0), (1, 1), shortest_path
+        )
+
+    assert output_file.read_text(encoding="utf-8") == "original\n"
+
+
+def test_cli_handles_unsolvable_maze(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Report solver failure without overwriting an existing output file."""
+    output_file = tmp_path / "maze.txt"
+    output_file.write_text("original\n", encoding="utf-8")
+    config_file = tmp_path / "config.txt"
+    config_file.write_text(
+        "WIDTH=2\nHEIGHT=2\nENTRY=0,0\nEXIT=1,1\n"
+        f"OUTPUT_FILE={output_file}\nPERFECT=True\n",
+        encoding="utf-8",
+    )
+
+    with patch("mazegen.cli.solve_bfs", side_effect=ValueError("unreachable")):
+        assert main([str(config_file)]) == 1
+
+    captured = capsys.readouterr()
+    assert "Maze error: unreachable" in captured.err
+    assert "Traceback" not in captured.err
+    assert output_file.read_text(encoding="utf-8") == "original\n"
