@@ -1,5 +1,5 @@
-from mazegen.config.config import Config, build_config
-from mazegen.config.validator import ConfigValue
+from mazegen.input.config.config import Config, build_config
+from mazegen.input.config.validator import ConfigValue
 
 
 def test_build_config_creates_config_with_seed() -> None:

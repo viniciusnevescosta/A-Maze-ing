@@ -2,8 +2,8 @@
 
 from typing import Literal
 
-from mazegen.cell import Cell
-from mazegen.validation import (
+from mazegen.maze.cell import Cell
+from mazegen.maze.validation import (
     get_reachable_cells,
     validate_connectivity,
     validate_external_walls,
@@ -15,9 +15,7 @@ Direction = Literal["north", "east", "south", "west"]
 class MazeGrid:
     """Store independent cells in a grid indexed by grid[y][x]."""
 
-    def __init__(
-        self, width: int, height: int
-    ) -> None:
+    def __init__(self, width: int, height: int) -> None:
         """Create a grid of independent, fully closed cells.
 
         Args:

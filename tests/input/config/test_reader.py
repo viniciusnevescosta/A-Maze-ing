@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from mazegen.config.reader import read_config_file
+from mazegen.input.config.reader import read_config_file
 
 
 def test_read_config_file_returns_lines_without_line_endings(

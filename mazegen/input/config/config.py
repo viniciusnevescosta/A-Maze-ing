@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import cast
 
-from mazegen.config.validator import ConfigValue, Coordinate
+from mazegen.input.config.validator import ConfigValue, Coordinate
 
 
 @dataclass

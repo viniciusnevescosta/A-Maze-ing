@@ -1,15 +1,15 @@
 import sys
 from collections.abc import Sequence
 
-from mazegen.config.config import build_config
-from mazegen.config.parser import filter_valid_lines, parse_config_lines
-from mazegen.config.reader import read_config_file
-from mazegen.config.validator import (
+from mazegen.input.config.config import build_config
+from mazegen.input.config.parser import filter_valid_lines, parse_config_lines
+from mazegen.input.config.reader import read_config_file
+from mazegen.input.config.validator import (
     convert_config_coordinates,
     convert_config_dimensions,
     convert_config_perfect,
-    validate_config_coordinates,
     convert_config_seed,
+    validate_config_coordinates,
     validate_required_keys,
     validate_unknown_keys,
 )

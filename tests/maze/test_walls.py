@@ -1,6 +1,6 @@
 import pytest
 
-from mazegen.generator import MazeGenerator
+from mazegen.maze.generator import MazeGenerator
 
 
 def assert_walls_are_coherent(maze: MazeGenerator) -> None:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from mazegen.grid import Direction, MazeGrid
+    from mazegen.maze.grid import Direction, MazeGrid
 
 
 def validate_external_walls(maze: MazeGrid) -> None:
