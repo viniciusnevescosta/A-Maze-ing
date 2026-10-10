@@ -50,7 +50,8 @@ prints one plain ASCII view and exits without waiting for input.
 
 ## Configuration
 
-One `KEY=VALUE` per line. Empty lines and lines starting with `#` are ignored.
+One `KEY=VALUE` per line. Keys are case-insensitive; values are preserved.
+Empty lines and lines starting with `#` are ignored.
 The following six keys are required; `SEED` is optional:
 
 ```ini

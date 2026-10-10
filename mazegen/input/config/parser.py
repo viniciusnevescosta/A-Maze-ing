@@ -22,7 +22,7 @@ def parse_config_lines(lines: list[str]) -> dict[str, str]:
             raise ValueError(f"Ambiguous syntax (multiple '='): '{line}'")
 
         key, value = line.split("=", 1)
-        key = key.strip()
+        key = key.strip().upper()
         value = value.strip()
 
         if not key:

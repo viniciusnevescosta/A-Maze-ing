@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+import shutil
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -48,3 +49,45 @@ def test_offline_install_and_external_import(tmp_path: Path) -> None:
         [str(python), "-I", "-c", script], cwd=tmp_path, check=True,
         capture_output=True, text=True,
     )
+
+
+def test_rebuilt_package_runs_external_script(tmp_path: Path) -> None:
+    """Rebuild, install elsewhere and run the entry script in both modes."""
+    root = Path(__file__).resolve().parents[1]
+    wheels = tmp_path / "wheels"
+    subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--no-isolation",
+         "--outdir", str(wheels)], cwd=root, check=True,
+        capture_output=True, text=True,
+    )
+    environment = tmp_path / "installed"
+    subprocess.run(
+        [sys.executable, "-m", "venv", str(environment)], check=True,
+        capture_output=True, text=True,
+    )
+    directory = "Scripts" if sys.platform == "win32" else "bin"
+    executable = "python.exe" if sys.platform == "win32" else "python"
+    python = environment / directory / executable
+    artifact, = wheels.glob("*.whl")
+    subprocess.run(
+        [str(python), "-m", "pip", "install", "--no-deps", str(artifact)],
+        check=True, capture_output=True, text=True,
+    )
+    shutil.copyfile(root / "a_maze_ing.py", tmp_path / "a_maze_ing.py")
+    for perfect in (True, False):
+        config = tmp_path / "config.txt"
+        config.write_text(
+            "width=20\nheight=15\nentry=0,0\nexit=19,14\n"
+            f"output_file=maze.txt\nperfect={perfect}\nseed=42\n",
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            [str(python), "a_maze_ing.py", "config.txt"], cwd=tmp_path,
+            check=True, capture_output=True, text=True,
+        )
+        assert "E" in result.stdout and "X" in result.stdout
+        lines = (tmp_path / "maze.txt").read_text().splitlines()
+        assert len(lines) == 19
+        assert all(len(row) == 20 for row in lines[:15])
+        assert lines[15:18] == ["", "0,0", "19,14"]
+        assert lines[18] and set(lines[18]) <= set("NESW")
