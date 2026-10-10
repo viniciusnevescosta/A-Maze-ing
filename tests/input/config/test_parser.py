@@ -7,6 +7,13 @@ from mazegen.input.config.parser import (
 )
 
 
+def test_parse_config_lines_normalizes_keys_not_values() -> None:
+    """Accept lowercase keys without changing paths or boolean values."""
+    assert parse_config_lines([
+        "width=10", "WiDtH=20", "output_file=MyMaze.txt", "perfect=False",
+    ]) == {"WIDTH": "20", "OUTPUT_FILE": "MyMaze.txt", "PERFECT": "False"}
+
+
 def test_filter_valid_lines_preserves_only_configuration_lines() -> None:
     """Verify filter valid lines preserves only configuration lines."""
     lines = [
