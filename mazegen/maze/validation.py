@@ -123,3 +123,20 @@ def validate_connectivity(
             "Maze corridors are not fully connected: "
             f"{len(reachable)} of {len(expected)} cells are reachable"
         )
+
+
+def validate_shared_walls(maze: MazeGrid) -> None:
+    """Reject inconsistent walls between adjacent cells."""
+    for y in range(maze.height):
+        for x in range(maze.width):
+            cell = maze.get_cell(x, y)
+            if x + 1 < maze.width:
+                if cell.east != maze.get_cell(x + 1, y).west:
+                    raise ValueError(
+                        f"Incoherent East/West wall at ({x}, {y})"
+                    )
+            if y + 1 < maze.height:
+                if cell.south != maze.get_cell(x, y + 1).north:
+                    raise ValueError(
+                        f"Incoherent South/North wall at ({x}, {y})"
+                    )

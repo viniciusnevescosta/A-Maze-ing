@@ -12,3 +12,9 @@ env/
 # Arquivos de sistema do macOS
 .DS_Store
 /.delta/
+
+# Generated outputs and packaging intermediates (root release stays tracked)
+/maze.txt
+/build/
+/dist/
+*.egg-info/

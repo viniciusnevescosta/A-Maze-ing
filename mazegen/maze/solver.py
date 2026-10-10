@@ -101,3 +101,28 @@ def path_to_directions(path: list[Coordinate]) -> str:
         movements.append(directions[delta])
 
     return "".join(movements)
+
+
+def validate_solution(
+    maze: MazeGrid,
+    path: list[Coordinate],
+    entry: Coordinate,
+    exit: Coordinate,
+) -> None:
+    """Reject solutions with wrong endpoints, blocked steps or extra length."""
+    if not path or path[0] != entry or path[-1] != exit:
+        raise ValueError("Solution must start at ENTRY and end at EXIT")
+    path_to_directions(path)
+    opposite = {"north": "south", "east": "west",
+                "south": "north", "west": "east"}
+    for source, target in zip(path, path[1:]):
+        cell = maze.get_cell(*source)
+        neighbor = maze.get_cell(*target)
+        for direction, coordinate in maze.get_neighbors(*source).items():
+            if coordinate == target:
+                if getattr(cell, direction) or getattr(
+                    neighbor, opposite[direction]
+                ):
+                    raise ValueError("Solution crosses a closed wall")
+    if len(path) != len(solve_bfs(maze, entry, exit)):
+        raise ValueError("Solution is not a shortest path")
