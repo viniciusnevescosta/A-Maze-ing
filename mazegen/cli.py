@@ -3,6 +3,9 @@
 import sys
 from collections.abc import Sequence
 
+from mazegen.display.ascii import render_maze
+from mazegen.display.interactive import run_menu
+from mazegen.input.config.config import Config
 from mazegen.input.config.config import build_config
 from mazegen.input.config.parser import filter_valid_lines, parse_config_lines
 from mazegen.input.config.reader import read_config_file
@@ -17,11 +20,34 @@ from mazegen.input.config.validator import (
 )
 from mazegen.maze.generator import MazeGenerator
 from mazegen.maze.pattern import can_fit_pattern
-from mazegen.maze.pattern_application import choose_pattern_cells
-from mazegen.maze.solver import path_to_directions, solve_bfs
+from mazegen.maze.solver import (
+    path_to_directions,
+    solve_bfs,
+    validate_solution,
+)
 from mazegen.output.writer import write_maze
 
 USAGE = "Usage: python3 a_maze_ing.py <config_file>"
+
+
+def generate_output(
+    maze: MazeGenerator, config: Config,
+) -> list[tuple[int, int]]:
+    """Generate the requested mode, validate its solution and write output."""
+    maze.generate(config.perfect, config.entry, config.exit)
+    if maze.pattern_omitted:
+        if not can_fit_pattern(config.width, config.height):
+            reason = "maze is too small for the 42 pattern"
+        else:
+            reason = "no safe position for the 42 pattern"
+        print(f"Warning: {reason}; generating without it.", file=sys.stderr)
+    path = solve_bfs(maze, config.entry, config.exit)
+    validate_solution(maze, path, config.entry, config.exit)
+    write_maze(
+        maze, config.output_file, config.entry, config.exit,
+        path_to_directions(path),
+    )
+    return path
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -53,7 +79,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
-    except OSError as error:
+    except (OSError, UnicodeError) as error:
         print(
             f"Unexpected error while reading the file: "
             f"'{config_path}': {error}",
@@ -81,44 +107,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Config error: {error}", file=sys.stderr)
         return 1
 
-    maze = MazeGenerator(
-        width=config.width,
-        height=config.height,
-        seed=config.seed,
-    )
-
     try:
-        maze.reserved = choose_pattern_cells(
-            maze,
-            config.entry,
-            config.exit,
-        )
-
-        if not maze.reserved:
-            if not can_fit_pattern(config.width, config.height):
-                reason = "maze is too small for the 42 pattern"
-            else:
-                reason = (
-                    "no safe position for the 42 pattern preserves "
-                    "ENTRY, EXIT and corridor connectivity"
-                )
-
-            print(
-                f"Warning: {reason}; generating without it.",
-                file=sys.stderr,
+        maze = MazeGenerator(config.width, config.height, config.seed)
+        path = generate_output(maze, config)
+        if sys.stdin.isatty() and sys.stdout.isatty():
+            run_menu(
+                maze, config.entry, config.exit, path,
+                lambda: generate_output(maze, config),
             )
-
-        maze.generate_perfect(*config.entry)
-        path = solve_bfs(maze, config.entry, config.exit)
-        shortest_path = path_to_directions(path)
-
-        write_maze(
-            maze,
-            config.output_file,
-            config.entry,
-            config.exit,
-            shortest_path,
-        )
+        else:
+            print(render_maze(
+                maze, config.entry, config.exit, path, maze.reserved,
+            ))
     except ValueError as error:
         print(f"Maze error: {error}", file=sys.stderr)
         return 1
@@ -128,5 +128,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+    except (MemoryError, OverflowError):
+        print("Maze dimensions exceed available resources.", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\nInterrupted.", file=sys.stderr)
+        return 130
 
     return 0

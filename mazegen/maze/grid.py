@@ -27,6 +27,8 @@ class MazeGrid:
         """
         if width <= 0 or height <= 0:
             raise ValueError("Maze dimensions must be greater than zero")
+        if width * height > 10000:
+            raise ValueError("Maze exceeds the supported limit of 10000 cells")
 
         self.width: int = width
         self.height: int = height

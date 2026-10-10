@@ -77,6 +77,7 @@ def choose_pattern_cells(
     maze: MazeGrid,
     entry: Coordinate,
     exit: Coordinate,
+    protected: set[Coordinate] | None = None,
 ) -> set[Coordinate]:
     """Choose safe reservations nearest the center, or return an empty set.
 
@@ -88,6 +89,11 @@ def choose_pattern_cells(
     """
     maze.get_cell(*entry)
     maze.get_cell(*exit)
+    required = {entry, exit}
+    if protected is not None:
+        required.update(protected)
+    for coordinate in required:
+        maze.get_cell(*coordinate)
 
     if not can_fit_pattern(maze.width, maze.height):
         return set()
@@ -111,7 +117,7 @@ def choose_pattern_cells(
     for _, origin_y, origin_x in candidates:
         reserved = get_pattern_cells((origin_x, origin_y))
 
-        if entry in reserved or exit in reserved:
+        if required & reserved:
             continue
 
         if corridors_can_connect(maze, entry, reserved):
