@@ -2,4 +2,6 @@
 extend-exclude =
     .venv,
     venv,
-    env
+    env,
+    build,
+    dist

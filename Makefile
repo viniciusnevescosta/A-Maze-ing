@@ -2,7 +2,7 @@ PYTHON ?= python3
 MAIN := a_maze_ing.py
 CONFIG ?= config.txt
 
-.PHONY: install run debug clean lint lint-strict test syntax check
+.PHONY: install run debug clean lint lint-strict test syntax check package
 
 install:
 	$(PYTHON) -m pip install -r requirements.txt
@@ -44,3 +44,6 @@ test:
 	exit $$status
 
 check: syntax lint test
+
+package:
+	$(PYTHON) -m build --wheel --outdir .
