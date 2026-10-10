@@ -9,9 +9,12 @@ permissions:
 
 jobs:
   quality:
-    name: Lint and Tests
+    name: ${{ matrix.python == '3.10' && 'Lint and Tests' || 'Python 3.14' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    strategy:
+      matrix:
+        python: ["3.10", "3.14"]
 
     steps:
       - name: Checkout repository
@@ -20,7 +23,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python }}
           cache: pip
 
       - name: Install dependencies
@@ -34,3 +37,6 @@ jobs:
 
       - name: Run tests
         run: make test
+
+      - name: Rebuild reusable package from sources
+        run: python -m build
