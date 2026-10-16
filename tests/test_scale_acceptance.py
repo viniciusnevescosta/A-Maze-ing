@@ -66,16 +66,16 @@ def check_output(path: Path, width: int, height: int, perfect: bool) -> None:
 
     directions = {"N": (0, -1), "E": (1, 0),
                   "S": (0, 1), "W": (-1, 0)}
-    path = lines[-1]
-    assert set(path) <= set(directions)
+    solution = lines[-1]
+    assert set(solution) <= set(directions)
     point = entry
-    for move in path:
+    for move in solution:
         dx, dy = directions[move]
         following = (point[0] + dx, point[1] + dy)
         assert following in graph[point]
         point = following
     assert point == exit_cell
-    assert len(path) == distances[exit_cell]
+    assert len(solution) == distances[exit_cell]
 
     for y in range(height - 2):
         for x in range(width - 2):
